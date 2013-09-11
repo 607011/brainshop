@@ -1,0 +1,43 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body, html {
+  background-color: #111;
+  color: #ddd;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  padding: 5px;
+}
+
+.ok {
+  color: #0e2;
+}
+
+.error {
+  color: #f00;
+}
+
+.message {
+  display: inline-block;
+  border: 1px solid #666;
+  background-color: #222;
+  padding: 5px;
+  margin: 5px;
+}
+
+  .message .user {
+    padding-right: 0.2em;
+    display: inline-block;
+    font-weight: bold;
+  }
+
+  .message .idea {
+    display: block;
+    font-size: 200%;
+  }
+
+  .message .date {
+    display: inline-block;
+  }
