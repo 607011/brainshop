@@ -1,6 +1,8 @@
 * {
   margin: 0;
   padding: 0;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body, html {
@@ -8,15 +10,15 @@ body, html {
   color: #ddd;
   font-family: Arial, sans-serif;
   font-size: 11px;
-  padding: 5px;
+  padding: 1px;
 }
 
 .ok {
-  color: #0e2;
+  background-color: #0e2 !important;
 }
 
 .error {
-  color: #f00;
+  background-color: #f00 !important;
 }
 
 .message {
@@ -24,7 +26,8 @@ body, html {
   border: 1px solid #666;
   background-color: #222;
   padding: 5px;
-  margin: 5px;
+  margin: 1px;
+  cursor: move;
 }
 
   .message .user {
@@ -41,3 +44,26 @@ body, html {
   .message .date {
     display: inline-block;
   }
+
+#main {
+  border: 1px solid #666;
+  background-color: #222;
+  padding: 5px;
+  margin: 1px 0;
+  width: 50%;
+  position: relative;
+}
+
+#status {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: black;
+  padding: 1px 2px;
+  background-color: #ddd;
+}
+
+#input {
+  width: 50%;
+}
+

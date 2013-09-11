@@ -6,6 +6,10 @@ var BS = (function () {
   var PORT = 8000;
   var URL = 'ws://' + HOST + ':' + PORT + '/';
   var socket;
+  var connectionEstablished = false;
+  var RETRY_SECS = 10;
+  var retry_secs;
+  var reconnectTimer = null;
 
   function send(message) {
     console.log(message);
@@ -22,12 +26,34 @@ var BS = (function () {
   }
 
   function openSocket() {
+    $('#status').removeAttr('class').html('connecting&nbsp;&hellip;');
     socket = new WebSocket(URL);
     socket.onopen = function () {
-      $('#status').text('connected').addClass('ok');
+      $('#status').removeAttr('class').text('connected').addClass('ok');
+      if (reconnectTimer !== null) {
+        clearInterval(reconnectTimer);
+        reconnectTimer = null;
+      }
+      connectionEstablished = true;
     };
     socket.onerror = function (error) {
-      $('#status').text('connection failed').addClass('error');
+      $('#status').removeAttr('class').text('connection failed').addClass('error');
+      if (connectionEstablished) {
+        retry_secs = RETRY_SECS;
+        if (reconnectTimer !== null)
+          clearInterval(reconnectTimer);
+        reconnectTimer = setInterval(function retryCountdown() {
+          // connectionEstablished = false;
+          if (--retry_secs > 0) {
+            $('#status').text('connection lost. trying to reconnect ... ' + retry_secs);
+          }
+          else {
+            clearInterval(reconnectTimer);
+            retry_secs = RETRY_SECS;
+            openSocket();
+          }
+        }, 1000);
+      }
     };
     socket.onmessage = function (e) {
       var data = JSON.parse(e.data);
@@ -42,8 +68,9 @@ var BS = (function () {
   return {
     init: function () {
       openSocket();
-      $('#submit-button').click(function () {
-        sendInput();
+      $('#input').bind('keyup', function (e) {
+        if (e.keyCode === 13)
+          sendInput();
       });
     }
   };
