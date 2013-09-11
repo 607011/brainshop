@@ -35,6 +35,7 @@ var BS = (function () {
         reconnectTimer = null;
       }
       connectionEstablished = true;
+      $('#board').empty();
     };
     socket.onerror = function (error) {
       $('#status').removeAttr('class').text('connection failed').addClass('error');
