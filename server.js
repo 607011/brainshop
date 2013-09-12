@@ -3,7 +3,7 @@
 
 var DEFAULT_BOARD = 'Brainstorm';
 var DATAFILE = DEFAULT_BOARD + '.json';
-var lastId = 0;
+var lastId = {};
 var fs = require('fs');
 var WebSocketServer = require('ws').Server;
 var http = require('http');
@@ -24,39 +24,44 @@ function pad0(x) {
   return ('00' + x.toFixed()).slice(-2);
 }
 
-function getIdea(id) {
+function getIdea(boardName, id) {
+  var ideas = board[boardName] || [];
   for (var i = 0; i < ideas.length; ++i)
     if (id === ideas[i].id)
       return ideas[i];
 }
 
-function getIdeaIndex(id) {
+function getIdeaIndex(boardName, id) {
+  var ideas = board[boardName] || [];
   for (var i = 0; i < ideas.length; ++i)
     if (id === ideas[i].id)
       return i;
 }
 
-function removeIdea(id) {
+function removeIdea(boardName, id) {
+  var ideas = board[boardName] || [];
   for (var i = 0; i < ideas.length; ++i)
     if (id === ideas[i].id)
       ideas.splice(i, 1);
 }
 
-function getLastId() {
-  lastId = 0;
+function getLastId(boardName) {
+  lastId[boardName] = 0;
+  var ideas = board[boardName] || [];
   for (var i = 0; i < ideas.length; ++i)
-    if (ideas[i].id > lastId)
-      lastId = ideas[i].id;
+    if (ideas[i].id > lastId[boardName])
+      lastId[boardName] = ideas[i].id;
 }
 
-function saveIdeas() {
-  fs.writeFileSync(DATAFILE, JSON.stringify(ideas), { flag: 'w+', encoding: 'utf8' });
+function saveIdeas(boardName) {
+  var fileName = boardName + '.json';
+  fs.writeFileSync(fileName, JSON.stringify(ideas), { flag: 'w+', encoding: 'utf8' });
 }
 
-function loadBoard(name) {
-  var fileName = name + '.json';
-  if (fs.existsSync(fileName))
-    board[name] = JSON.parse(fs.readFileSync(fileName, { encoding: 'utf8' }));
+function loadIdeas(boardName) {
+  var fileName = boardName + '.json';
+  board[boardName] = (fs.existsSync(fileName)) ? JSON.parse(fs.readFileSync(fileName, { encoding: 'utf8' })) : [];
+  getLastId(boardName);
 }
 
 function sendToAllUsers(message) {
@@ -78,9 +83,6 @@ function sendToAllUsers(message) {
 }
 
 function main() {
-  if (fs.existsSync(DATAFILE))
-    ideas = JSON.parse(fs.readFileSync(DATAFILE, { encoding: 'utf8' }));
-
   function httpServer(req, res) {
     var pathName = url.parse(req.url).pathname;
     if (pathName === '/')
@@ -106,51 +108,54 @@ function main() {
 
   wss = new WebSocketServer({ port: 8889 });
   wss.on('connection', function (ws) {
-    getLastId();
     users.push(ws);
-    for (var i = 0; i < ideas.length; ++i)
-      ws.send(JSON.stringify(ideas[i]));
     ws.on('message', function (message) {
       var data = JSON.parse(message || '{}');
       var idea;
+      console.log("DATA:", data);
       switch (data.type) {
         case 'idea':
-          console.log(data);
           var now = new Date;
           data.date = now.getFullYear() + '-' + pad0(now.getMonth() + 1) + '-' + pad0(now.getDate()) + ' ' + pad0(now.getHours()) + ':' + pad0(now.getMinutes());
           if (typeof data.id === 'undefined') {
             // new entry
-            data.id = ++lastId;
-            delete data.board;
-            ideas.push(data);
+            data.id = ++lastId[data.board];
+            board[data.board].push(data);
           }
           else {
             // update entry
-            ideas[getIdeaIndex(data.id)] = data;
+            ideas[getIdeaIndex(data.board, data.id)] = data;
           }
           sendToAllUsers(data);
-          saveIdeas();
+          saveIdeas(data.board);
           break;
         case 'command':
           switch (data.command) {
+            case 'init':
+              if (typeof board[data.board] === 'undefined')
+                loadIdeas(data.board);
+              ideas = board[data.board];
+              for (var i = 0; i < ideas.length; ++i)
+                ws.send(JSON.stringify(ideas[i]));
+              break;
             case 'delete':
-              sendToAllUsers({ type: 'command', command: 'delete', id: data.id });
-              removeIdea(data.id);
-              saveIdeas();
+              sendToAllUsers({ type: 'command', board: data.board, command: 'delete', id: data.id });
+              removeIdea(data.board, data.id);
+              saveIdeas(data.board);
               break;
             case 'like':
               idea = getIdea(data.id);
               idea.likes = idea.likes || 0;
               ++idea.likes;
-              sendToAllUsers(idea);
-              saveIdeas();
+              sendToAllUsers(data.board, idea);
+              saveIdeas(data.board);
               break;
             case 'dislike':
-              idea = getIdea(data.id);
+              idea = getIdea(data.board, data.id);
               idea.dislikes = idea.dislikes || 0;
               ++idea.dislikes;
-              sendToAllUsers(idea);
-              saveIdeas();
+              sendToAllUsers(data.board, idea);
+              saveIdeas(data.board);
               break;
           }
           break;

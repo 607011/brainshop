@@ -53,6 +53,7 @@ var Brainstorm = (function () {
       }
       connectionEstablished = true;
       $('#board').empty();
+      send({ type: 'command', command: 'init', board: boardName });
     };
     socket.onerror = function (error) {
       $('.message').css('opacity', 0.3);
@@ -106,7 +107,7 @@ var Brainstorm = (function () {
                 .click(function (e) {
                   var ok = confirm("Wirklich löschen?");
                   if (ok) {
-                    socket.send(JSON.stringify({ type: 'command', command: 'delete', id: data.id }));
+                    socket.send(JSON.stringify({ type: 'command', board: boardName, command: 'delete', id: data.id }));
                   }
                 }
               )
