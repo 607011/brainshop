@@ -94,13 +94,13 @@ var Brainstorm = (function () {
               .append($('<span>' + (data.likes || 0) + '</span>').attr('id', 'likes-' + data.id))
               .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
                 .click(function (e) {
-                  socket.send(JSON.stringify({ type: 'command', command: 'like', id: data.id }));
+                  socket.send(JSON.stringify({ type: 'command', command: 'like', board: boardName, id: data.id }));
                 })
               )
               .append($('<span>' + (data.dislikes || 0) + '</span>').attr('id', 'dislikes-' + data.id))
               .append($('<span class="icon thumb-down" title="Nicht so doll"></span>')
                 .click(function (e) {
-                  socket.send(JSON.stringify({ type: 'command', command: 'dislike', id: data.id }));
+                  socket.send(JSON.stringify({ type: 'command', command: 'dislike', board: boardName, id: data.id }));
                 })
               )
               .append($('<span class="icon trash" title="in den Müll"></span>')

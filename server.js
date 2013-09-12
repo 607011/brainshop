@@ -144,17 +144,17 @@ function main() {
               saveIdeas(data.board);
               break;
             case 'like':
-              idea = getIdea(data.id);
+              idea = getIdea(data.board, data.id);
               idea.likes = idea.likes || 0;
               ++idea.likes;
-              sendToAllUsers(data.board, idea);
+              sendToAllUsers(idea);
               saveIdeas(data.board);
               break;
             case 'dislike':
               idea = getIdea(data.board, data.id);
               idea.dislikes = idea.dislikes || 0;
               ++idea.dislikes;
-              sendToAllUsers(data.board, idea);
+              sendToAllUsers(idea);
               saveIdeas(data.board);
               break;
           }
