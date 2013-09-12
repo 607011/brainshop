@@ -43,32 +43,56 @@ a {
   position: relative;
   display: inline-block;
   background-color: #d3cf2e;
-  padding: 5px;
   margin: 1px;
-  cursor: move;
   max-width: 33%;
 }
 
-  .message .user {
-    padding-left: 1em;
+  .message header {
+    display: block;
+    background-color: #a9a62f;
+    padding: 2px 1px 1px 5px;
+    cursor: move;
+    max-height: 14px;
+    overflow: hidden;
+    text-align: right;
+  }
+
+  .message .body {
+    padding: 2px 17px 1px 5px;
+  }
+
+  .message .body .idea {
+    display: block;
+    font-size: 23px;
+  }
+
+  .message footer {
+    padding: 0 5px;
+  }
+
+  .message footer .user {
+    padding-left: 0.7em;
     display: inline-block;
     font-weight: bold;
     font-family: Arial, sans-serif;
     font-size: 10px;
-    position: absolute;
-    right: 2px;
   }
 
-  .message .idea {
-    display: block;
-    font-size: 200%;
-  }
-
-  .message .date {
+  .message footer .date {
     display: inline-block;
     font-family: Arial, sans-serif;
     font-size: 10px;
   }
+
+.pin {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background-image: url(pin.png);
+  width: 11px;
+  height: 19px;
+  cursor: pointer;
+}
 
 #main {
   background-color: #5e9491;
@@ -91,7 +115,27 @@ a {
 }
 
 #input {
-  width: 100%;
+  width: 95%;
   font-family: Arial, sans-serif;
 }
 
+.message header .icon {
+  display: inline-block;
+  cursor: pointer;
+  margin-left: 2px;
+  width: 11px;
+  height: 12px;
+  background-image: url(header-icons.png);
+}
+
+  .message header .icon.thumb-up {
+    background-position: 0 0;
+  }
+
+  .message header .icon.thumb-down {
+    background-position: -11px 0;
+  }
+
+  .message header .icon.trash {
+    background-position: -22px 0;
+  }

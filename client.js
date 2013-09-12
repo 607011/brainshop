@@ -2,8 +2,8 @@
 // All rights reserved.
 
 var BS = (function () {
-  var HOST = 'localhost';
-  var PORT = 8000;
+  var HOST = document.location.hostname;
+  var PORT = 8889;
   var URL = 'ws://' + HOST + ':' + PORT + '/';
   var socket;
   var connectionEstablished = false;
@@ -12,17 +12,17 @@ var BS = (function () {
   var reconnectTimer = null;
 
   function send(message) {
-    console.log(message);
-    var msg = {
-      type: 'idea',
-      text: message,
-      user: 'ola'
-    };
-    socket.send(JSON.stringify(msg));
+    socket.send(JSON.stringify(message));
   }
 
-  function sendInput() {
-    send($('#input').val());
+  function sendIdea() {
+    send({ type: 'idea', text: $('#input').val(), user: 'ola' });
+    $('#input').val('');
+  }
+
+  function updateIdea(data) {
+    $('#likes-' + data.id).text(data.likes);
+    $('#dislikes-' + data.id).text(data.dislikes);
   }
 
   function openSocket() {
@@ -60,13 +60,60 @@ var BS = (function () {
         }
       }, 1000);
     };
+
     socket.onmessage = function (e) {
       var data = JSON.parse(e.data);
-      $('#board').append($('<div class="message">'
-        + '<span class="idea">' + data.text + '</span>'
-        + '<span class="date">' + data.date + '</span>'
-        + '<span class="user">' + data.user + '</span>'
-        + '</div>'));
+      switch (data.type) {
+        case 'idea':
+          if ($('#idea-' + data.id).length > 0) {
+            updateIdea(data);
+          }
+          else {
+            var header = $('<header></header>')
+              .append($('<span>' + (data.likes || 0) + '</span>').attr('id', 'likes-' + data.id))
+              .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
+                .click(function (e) {
+                  socket.send(JSON.stringify({ type: 'command', command: 'like', id: data.id }));
+                })
+              )
+              .append($('<span>' + (data.dislikes || 0) + '</span>').attr('id', 'dislikes-' + data.id))
+              .append($('<span class="icon thumb-down" title="Nicht so doll"></span>')
+                .click(function (e) {
+                  socket.send(JSON.stringify({ type: 'command', command: 'dislike', id: data.id }));
+                })
+              )
+              .append($('<span class="icon trash" title="in den Müll"></span>')
+                .click(function (e) {
+                  var ok = confirm("Wirklich löschen?");
+                  if (ok) {
+                    socket.send(JSON.stringify({ type: 'command', command: 'delete', id: data.id }));
+                  }
+                }
+              )
+            );
+            var idea = $('<div class="message">'
+              + '<div class="body"><span class="idea">' + data.text + '</span></div>'
+              + '<footer>'
+              + '<span class="date">' + data.date + '</span>'
+              + '<span class="user">' + data.user + '</span>'
+              + '</footer>'
+              + '</div>').attr('id', 'idea-' + data.id)
+            idea.prepend(header);
+            $('#board').append(idea);
+          }
+          break;
+        case 'command':
+          switch (data.command) {
+            case 'delete':
+              $('#board').find('#idea-' + data.id).remove();
+              break;
+            default:
+              break;
+          }
+          break;
+        default:
+          break;
+      }
     }
   }
 
@@ -75,7 +122,7 @@ var BS = (function () {
       openSocket();
       $('#input').bind('keypress', function (e) {
         if (e.keyCode === 13)
-          sendInput();
+          sendIdea();
         if (e.target.value.length > 100)
           e.preventDefault();
       });
