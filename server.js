@@ -92,7 +92,7 @@ function main() {
       switch (data.type) {
         case 'idea':
           var now = new Date;
-          data.date = now.getFullYear() + '-' + pad0(now.getMonth()) + '-' + pad0(now.getDay());
+          data.date = now.getFullYear() + '-' + pad0(now.getMonth() + 1) + '-' + pad0(now.getDate());
           data.id = ++lastId;
           ideas.push(data);
           sendToAllUsers(data);

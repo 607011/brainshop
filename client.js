@@ -1,7 +1,7 @@
 // Copyright (c) 2013 Oliver Lau <ola@ct.de>, Heise Zeitschriften Verlag
 // All rights reserved.
 
-var BS = (function () {
+var Brainstorm = (function () {
   var HOST = document.location.hostname;
   var PORT = 8889;
   var URL = 'ws://' + HOST + ':' + PORT + '/';
@@ -10,13 +10,14 @@ var BS = (function () {
   var RETRY_SECS = 11;
   var retry_secs;
   var reconnectTimer = null;
+  var user;
 
   function send(message) {
     socket.send(JSON.stringify(message));
   }
 
   function sendIdea() {
-    send({ type: 'idea', text: $('#input').val(), user: 'ola' });
+    send({ type: 'idea', text: $('#input').val(), user: user });
     $('#input').val('');
   }
 
@@ -29,7 +30,10 @@ var BS = (function () {
     $('#status').removeAttr('class').html('connecting&nbsp;&hellip;');
     socket = new WebSocket(URL);
     socket.onopen = function () {
-      $('#status').removeAttr('class').text('connected').addClass('ok');
+      $('.message').css('opacity', 1);
+      $('#input').removeAttr('disabled');
+      $('#uid').removeAttr('disabled');
+      $('#status').attr('class', 'ok').text('connected');
       if (reconnectTimer !== null) {
         clearInterval(reconnectTimer);
         reconnectTimer = null;
@@ -38,6 +42,9 @@ var BS = (function () {
       $('#board').empty();
     };
     socket.onerror = function (error) {
+      $('.message').css('opacity', 0.3);
+      $('#input').attr('disabled', 'disabled');
+      $('#uid').attr('disabled', 'disabled');
       $('#status').removeAttr('class').text('connection failed').addClass('error');
       retry_secs = RETRY_SECS;
       if (reconnectTimer !== null)
@@ -69,7 +76,7 @@ var BS = (function () {
             updateIdea(data);
           }
           else {
-            var header = $('<header></header>')
+            var header = $('<div class="header"></div>')
               .append($('<span>' + (data.likes || 0) + '</span>').attr('id', 'likes-' + data.id))
               .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
                 .click(function (e) {
@@ -93,10 +100,10 @@ var BS = (function () {
             );
             var idea = $('<div class="message">'
               + '<div class="body"><span class="idea">' + data.text + '</span></div>'
-              + '<footer>'
+              + '<div class="footer">'
               + '<span class="date">' + data.date + '</span>'
               + '<span class="user">' + data.user + '</span>'
-              + '</footer>'
+              + '</div>'
               + '</div>').attr('id', 'idea-' + data.id)
             idea.prepend(header);
             $('#board').append(idea);
@@ -105,7 +112,10 @@ var BS = (function () {
         case 'command':
           switch (data.command) {
             case 'delete':
-              $('#board').find('#idea-' + data.id).remove();
+              $('#board').find('#idea-' + data.id).addClass('deleting');
+              setTimeout(function () {
+                $('#board').find('#idea-' + data.id).remove();
+              }, 1000);
               break;
             default:
               break;
@@ -120,17 +130,32 @@ var BS = (function () {
   return {
     init: function () {
       openSocket();
-      $('#input').bind('keypress', function (e) {
+      $('#input').bind('keyup', function (e) {
         if (e.keyCode === 13)
           sendIdea();
         if (e.target.value.length > 100)
           e.preventDefault();
+      }).trigger('focus');
+      user = localStorage.getItem('user') || '';
+      if (user === '')
+        $('#uid').attr('class', 'pulse');
+      $('#uid').val(user).bind({
+        'keypress': function (e) {
+          if (e.target.value.length > 4)
+            e.preventDefault();
+        },
+        'keyup': function (e) {
+          user = e.target.value;
+          localStorage.setItem('user', user);
+          $('#uid').removeClass('pulse');
+        }
       });
     }
   };
 
 })();
 
-  $(document).ready(function() {
-    BS.init();
-  });
+
+$(document).ready(function () {
+  Brainstorm.init();
+});
