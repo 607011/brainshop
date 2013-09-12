@@ -1,8 +1,6 @@
 * {
   margin: 0;
   padding: 0;
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 body, html {
@@ -55,6 +53,10 @@ a {
     max-height: 14px;
     overflow: hidden;
     text-align: right;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
   }
 
   .message .body {
@@ -117,7 +119,7 @@ a {
 }
 
 #main {
-  background-color: #5e9491;
+  background-color: #5e945f;
   padding: 5px;
   margin: 1px;
   width: 50%;
@@ -146,8 +148,13 @@ footer {
 }
 
 .deleting {
-  transition: opacity ease 0.5s;
+  transition: opacity ease 0.3s;
   opacity: 0;
+}
+
+.showing {
+  transition: opacity ease-out 0.3s;
+  opacity: 1;
 }
 
 input[type="text"] {
@@ -165,11 +172,11 @@ input[type="text"] {
   }
 
 .pulse {
-  animation: pulse 0.2s alternate ease infinite;
-  -webkit-animation: pulse 0.2s alternate ease infinite;
-  -moz-animation: pulse 0.2s alternate ease infinite;
-  -ms-animation: pulse 0.2s alternate ease infinite;
-  -o-animation: pulse 0.2s alternate ease infinite;
+  animation: pulse 0.2s alternate ease-in-out infinite;
+  -webkit-animation: pulse 0.2s alternate ease-in-out infinite;
+  -moz-animation: pulse 0.2s alternate ease-in-out infinite;
+  -ms-animation: pulse 0.2s alternate ease-in-out infinite;
+  -o-animation: pulse 0.2s alternate ease-in-out infinite;
 }
 
 @keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}

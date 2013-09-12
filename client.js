@@ -16,14 +16,22 @@ var Brainstorm = (function () {
     socket.send(JSON.stringify(message));
   }
 
-  function sendIdea() {
-    send({ type: 'idea', text: $('#input').val(), user: user });
-    $('#input').val('');
+  function sendIdea(id) {
+    if (user === '')
+      return;
+    if (typeof id === 'undefined') {
+      send({ type: 'idea', text: $('#input').val(), user: user });
+      $('#input').val('');
+    }
+    else {
+      send({ type: 'idea', id: id, text: $('#idea-text-' + id).text(), user: $('#user-' + id).text() });
+    }
   }
 
   function updateIdea(data) {
     $('#likes-' + data.id).text(data.likes);
     $('#dislikes-' + data.id).text(data.dislikes);
+    $('#idea-text-' + data.id).text(data.text);
   }
 
   function openSocket() {
@@ -31,7 +39,7 @@ var Brainstorm = (function () {
     socket = new WebSocket(URL);
     socket.onopen = function () {
       $('.message').css('opacity', 1);
-      $('#input').removeAttr('disabled');
+      $('#input').removeAttr('disabled').trigger('focus');
       $('#uid').removeAttr('disabled');
       $('#status').attr('class', 'ok').text('connected');
       if (reconnectTimer !== null) {
@@ -98,15 +106,23 @@ var Brainstorm = (function () {
                 }
               )
             );
-            var idea = $('<div class="message">'
-              + '<div class="body"><span class="idea">' + data.text + '</span></div>'
+            var idea = $('<div class="message" id="idea-' + data.id + '">'
+              + '<div class="body"><span class="idea" id="idea-text-' + data.id + '">' + data.text + '</span></div>'
               + '<div class="footer">'
               + '<span class="date">' + data.date + '</span>'
-              + '<span class="user">' + data.user + '</span>'
+              + '<span class="user" id="user-' + data.id + '">' + data.user + '</span>'
               + '</div>'
-              + '</div>').attr('id', 'idea-' + data.id)
+              + '</div>');
             idea.prepend(header);
             $('#board').append(idea);
+            $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
+              keypress: function (e) {
+                if (e.keyCode === 13) {
+                  sendIdea(data.id);
+                  e.preventDefault();
+                }
+              }
+            });
           }
           break;
         case 'command':
@@ -115,7 +131,7 @@ var Brainstorm = (function () {
               $('#board').find('#idea-' + data.id).addClass('deleting');
               setTimeout(function () {
                 $('#board').find('#idea-' + data.id).remove();
-              }, 1000);
+              }, 300);
               break;
             default:
               break;
@@ -129,25 +145,29 @@ var Brainstorm = (function () {
 
   return {
     init: function () {
+      user = localStorage.getItem('user') || '';
+      if (user === '') {
+        $('#uid').attr('class', 'pulse');
+        alert('Du bist das erste Mal hier. Zum Mitmachen trage bitte dein Kürzel in das blinkende Feld ein.');
+      }
       openSocket();
       $('#input').bind('keyup', function (e) {
         if (e.keyCode === 13)
           sendIdea();
         if (e.target.value.length > 100)
           e.preventDefault();
-      }).trigger('focus');
-      user = localStorage.getItem('user') || '';
-      if (user === '')
-        $('#uid').attr('class', 'pulse');
+      });
       $('#uid').val(user).bind({
-        'keypress': function (e) {
+        keypress: function (e) {
           if (e.target.value.length > 4)
             e.preventDefault();
         },
-        'keyup': function (e) {
-          user = e.target.value;
-          localStorage.setItem('user', user);
-          $('#uid').removeClass('pulse');
+        keyup: function (e) {
+          if (e.target.value !== '') {
+            user = e.target.value;
+            localStorage.setItem('user', user);
+            $('#uid').removeClass('pulse');
+          }
         }
       });
     }

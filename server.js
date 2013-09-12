@@ -6,8 +6,14 @@ var lastId = 0;
 var fs = require('fs');
 var WebSocketServer = require('ws').Server;
 var http = require('http');
+var https = require('https');
 var net = require('net');
 var url = require('url');
+var crypto = require('crypto');
+var privateKey;
+var certificate;
+var credentials;
+var boards = {};
 var wss;
 var users = [];
 var ideas = [];
@@ -21,6 +27,12 @@ function getIdea(id) {
   for (var i = 0; i < ideas.length; ++i)
     if (id === ideas[i].id)
       return ideas[i];
+}
+
+function getIdeaIndex(id) {
+  for (var i = 0; i < ideas.length; ++i)
+    if (id === ideas[i].id)
+      return i;
 }
 
 function removeIdea(id) {
@@ -62,7 +74,7 @@ function main() {
   if (fs.existsSync(DATAFILE))
     ideas = JSON.parse(fs.readFileSync(DATAFILE, { encoding: 'utf8' }));
 
-  app = http.createServer(function (req, res) {
+  function httpServer(req, res) {
     var pathname = url.parse(req.url).pathname;
     if (pathname === '/')
       pathname = '/client.html';
@@ -78,7 +90,12 @@ function main() {
         res.end();
       }
     });
-  }).listen(8888);
+  }
+
+  privateKey = fs.readFileSync('privatekey.pem').toString();
+  certificate = fs.readFileSync('certificate.pem').toString();
+  https.createServer({ key: privateKey, cert: certificate }, httpServer).listen(8887);
+  http.createServer(httpServer).listen(8888);
 
   wss = new WebSocketServer({ port: 8889 });
   wss.on('connection', function (ws) {
@@ -91,10 +108,18 @@ function main() {
       var idea;
       switch (data.type) {
         case 'idea':
+          console.log(data);
           var now = new Date;
-          data.date = now.getFullYear() + '-' + pad0(now.getMonth() + 1) + '-' + pad0(now.getDate());
-          data.id = ++lastId;
-          ideas.push(data);
+          data.date = now.getFullYear() + '-' + pad0(now.getMonth() + 1) + '-' + pad0(now.getDate()) + ' ' + pad0(now.getHours()) + ':' + pad0(now.getMinutes());
+          if (typeof data.id === 'undefined') {
+            // new entry
+            data.id = ++lastId;
+            ideas.push(data);
+          }
+          else {
+            // update entry
+            ideas[getIdeaIndex(data.id)] = data;
+          }
           sendToAllUsers(data);
           saveIdeas();
           break;
