@@ -11,6 +11,7 @@ var Brainstorm = (function () {
   var retry_secs;
   var reconnectTimer = null;
   var user;
+  var boardName = 'Brainstorm';
 
   function send(message) {
     socket.send(JSON.stringify(message));
@@ -20,18 +21,22 @@ var Brainstorm = (function () {
     if (user === '')
       return;
     if (typeof id === 'undefined') {
-      send({ type: 'idea', text: $('#input').val(), user: user });
+      send({ board: boardName, type: 'idea', text: $('#input').val(), user: user });
       $('#input').val('');
     }
     else {
-      send({ type: 'idea', id: id, text: $('#idea-text-' + id).text(), user: $('#user-' + id).text() });
+      send({ board: boardName, type: 'idea', id: id, text: $('#idea-text-' + id).html(), user: $('#user-' + id).text() });
     }
   }
 
   function updateIdea(data) {
     $('#likes-' + data.id).text(data.likes);
     $('#dislikes-' + data.id).text(data.dislikes);
-    $('#idea-text-' + data.id).text(data.text);
+    $('#idea-text-' + data.id).html(data.text);
+    $('#idea-' + data.id).addClass('blink-once');
+    setTimeout(function () {
+      $('#idea-' + data.id).removeClass('blink-once');
+    }, 1000);
   }
 
   function openSocket() {
@@ -117,9 +122,12 @@ var Brainstorm = (function () {
             $('#board').append(idea);
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
               keypress: function (e) {
+                console.log(e);
                 if (e.keyCode === 13) {
-                  sendIdea(data.id);
-                  e.preventDefault();
+                  if (!e.shiftKey) {
+                    sendIdea(data.id);
+                    e.preventDefault();
+                  }
                 }
               }
             });
@@ -143,9 +151,26 @@ var Brainstorm = (function () {
     }
   }
 
+  function evaluateURLParameters() {
+    $.each(document.location.search.substring(1).split('&'), function (i, p) {
+      var param = p.split('=');
+      var key = param[0], val = param[1];
+      switch (key) {
+        case 'board':
+          boardName = decodeURIComponent(val);
+          $('h1').text(boardName);
+          break;
+        default: // ignore any other parameter
+          break;
+      }
+    });
+  }
+
   return {
     init: function () {
+      evaluateURLParameters();
       user = localStorage.getItem('user') || '';
+      $('h1').text(boardName);
       if (user === '') {
         $('#uid').attr('class', 'pulse');
         alert('Du bist das erste Mal hier. Zum Mitmachen trage bitte dein Kürzel in das blinkende Feld ein.');

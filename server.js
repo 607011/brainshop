@@ -1,7 +1,8 @@
 // Copyright (c) 2013 Oliver Lau <ola@ct.de>, Heise Zeitschriften Verlag
 // All rights reserved.
 
-var DATAFILE = 'data.json';
+var DEFAULT_BOARD = 'Brainstorm';
+var DATAFILE = DEFAULT_BOARD + '.json';
 var lastId = 0;
 var fs = require('fs');
 var WebSocketServer = require('ws').Server;
@@ -13,7 +14,7 @@ var crypto = require('crypto');
 var privateKey;
 var certificate;
 var credentials;
-var boards = {};
+var board = {};
 var wss;
 var users = [];
 var ideas = [];
@@ -52,6 +53,12 @@ function saveIdeas() {
   fs.writeFileSync(DATAFILE, JSON.stringify(ideas), { flag: 'w+', encoding: 'utf8' });
 }
 
+function loadBoard(name) {
+  var fileName = name + '.json';
+  if (fs.existsSync(fileName))
+    board[name] = JSON.parse(fs.readFileSync(fileName, { encoding: 'utf8' }));
+}
+
 function sendToAllUsers(message) {
   var msg = JSON.stringify(message), invalid = {}, i;
   for (i = 0; i < users.length; ++i) {
@@ -75,14 +82,14 @@ function main() {
     ideas = JSON.parse(fs.readFileSync(DATAFILE, { encoding: 'utf8' }));
 
   function httpServer(req, res) {
-    var pathname = url.parse(req.url).pathname;
-    if (pathname === '/')
-      pathname = '/client.html';
-    var file = '.' + pathname;
+    var pathName = url.parse(req.url).pathname;
+    if (pathName === '/')
+      pathName = '/client.html';
+    var file = '.' + pathName;
     fs.exists(file, function (exists) {
       if (exists) {
         res.writeHead(200);
-        res.write(fs.readFileSync('.' + pathname));
+        res.write(fs.readFileSync('.' + pathName));
         res.end();
       }
       else {
@@ -114,6 +121,7 @@ function main() {
           if (typeof data.id === 'undefined') {
             // new entry
             data.id = ++lastId;
+            delete data.board;
             ideas.push(data);
           }
           else {

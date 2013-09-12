@@ -17,8 +17,6 @@ body {
 h1 {
   font-weight: bold;
   font-size: 32px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 a {
@@ -156,6 +154,21 @@ footer {
   transition: opacity ease-out 0.3s;
   opacity: 1;
 }
+
+.blink-once {
+  animation: blink 1s ease;
+  -webkit-animation: blink 1s ease;
+  -moz-animation: blink 1s ease;
+  -ms-animation: blink 1s easee;
+  -o-animation: blink 1s ease;
+}
+
+@keyframes blink { 50% { background-color: rgba(255, 255, 255, 1.0); }}
+@-webkit-keyframes blink { 50% { background-color: rgba(255, 255, 255, 1.0); } }
+@-moz-keyframes blink { 50% { background-color: rgba(255, 255, 255, 1.0); }}
+@-ms-keyframes blink { 50% { background-color: rgba(255, 255, 255, 1.0); } }
+@-o-keyframes blink {  50% { background-color: rgba(255, 255, 255, 1.0); } }
+
 
 input[type="text"] {
   font-family: Arial, sans-serif;
