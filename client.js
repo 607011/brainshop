@@ -7,7 +7,7 @@ var BS = (function () {
   var URL = 'ws://' + HOST + ':' + PORT + '/';
   var socket;
   var connectionEstablished = false;
-  var RETRY_SECS = 10;
+  var RETRY_SECS = 11;
   var retry_secs;
   var reconnectTimer = null;
 
@@ -39,29 +39,33 @@ var BS = (function () {
     };
     socket.onerror = function (error) {
       $('#status').removeAttr('class').text('connection failed').addClass('error');
-      if (connectionEstablished) {
-        retry_secs = RETRY_SECS;
-        if (reconnectTimer !== null)
+      retry_secs = RETRY_SECS;
+      if (reconnectTimer !== null)
+        clearInterval(reconnectTimer);
+      reconnectTimer = setInterval(function retryCountdown() {
+        if (--retry_secs > 0) {
+          $('#status').removeAttr('class').addClass('reconnect').empty()
+            .append($('<span>trying to reconnect&nbsp;&hellip; ' + retry_secs + '</span>'))
+            .append($('<span> (<a href="#">reconnect now</a>)</span>').click(
+            function (e) {
+              e.preventDefault();
+              clearInterval(reconnectTimer);
+              openSocket();
+            }));
+        }
+        else {
           clearInterval(reconnectTimer);
-        reconnectTimer = setInterval(function retryCountdown() {
-          // connectionEstablished = false;
-          if (--retry_secs > 0) {
-            $('#status').text('connection lost. trying to reconnect ... ' + retry_secs);
-          }
-          else {
-            clearInterval(reconnectTimer);
-            retry_secs = RETRY_SECS;
-            openSocket();
-          }
-        }, 1000);
-      }
+          retry_secs = RETRY_SECS;
+          openSocket();
+        }
+      }, 1000);
     };
     socket.onmessage = function (e) {
       var data = JSON.parse(e.data);
       $('#board').append($('<div class="message">'
         + '<span class="idea">' + data.text + '</span>'
-        + '<span class="user">' + data.user + '</span>'
         + '<span class="date">' + data.date + '</span>'
+        + '<span class="user">' + data.user + '</span>'
         + '</div>'));
     }
   }
@@ -69,9 +73,11 @@ var BS = (function () {
   return {
     init: function () {
       openSocket();
-      $('#input').bind('keyup', function (e) {
+      $('#input').bind('keypress', function (e) {
         if (e.keyCode === 13)
           sendInput();
+        if (e.target.value.length > 100)
+          e.preventDefault();
       });
     }
   };

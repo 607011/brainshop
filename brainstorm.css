@@ -1,3 +1,5 @@
+@import url(http://fonts.googleapis.com/css?family=Patrick+Hand);
+
 * {
   margin: 0;
   padding: 0;
@@ -6,11 +8,23 @@
 }
 
 body, html {
-  background-color: #111;
-  color: #ddd;
-  font-family: Arial, sans-serif;
+  background-color: #25273c;
+  color: #111;
+  font-family: Patrick Hand, cursive;
   font-size: 11px;
+}
+
+body {
   padding: 1px;
+}
+
+h1 {
+  font-weight: bold;
+  font-size: 38px;
+}
+
+a {
+  color: #111;
 }
 
 .ok {
@@ -21,19 +35,28 @@ body, html {
   background-color: #f00 !important;
 }
 
+.reconnect {
+  background-color: #fc0 !important;
+}
+
 .message {
+  position: relative;
   display: inline-block;
-  border: 1px solid #666;
-  background-color: #222;
+  background-color: #d3cf2e;
   padding: 5px;
   margin: 1px;
   cursor: move;
+  max-width: 33%;
 }
 
   .message .user {
-    padding-right: 0.2em;
+    padding-left: 1em;
     display: inline-block;
     font-weight: bold;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    position: absolute;
+    right: 2px;
   }
 
   .message .idea {
@@ -43,14 +66,16 @@ body, html {
 
   .message .date {
     display: inline-block;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
   }
 
 #main {
-  border: 1px solid #666;
-  background-color: #222;
+  background-color: #5e9491;
   padding: 5px;
-  margin: 1px 0;
+  margin: 1px;
   width: 50%;
+  color: white;
   position: relative;
 }
 
@@ -61,9 +86,12 @@ body, html {
   color: black;
   padding: 1px 2px;
   background-color: #ddd;
+  font-family: Arial, sans-serif;
+  font-size: 10px;
 }
 
 #input {
-  width: 50%;
+  width: 100%;
+  font-family: Arial, sans-serif;
 }
 
