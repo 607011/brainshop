@@ -17,13 +17,16 @@ Array.prototype.each = function (callback) {
   for (var i = 0; i < this.length; ++i)
     callback(i, this[i]);
 }
+Array.prototype.contains = function (val) {
+  return this.indexOf(val) >= 0;
+}
 Array.prototype.remove = function (val) {
   var idx = this.indexOf(val);
   if (idx >= 0)
     this.splice(idx, 1);
 };
 Array.prototype.add = function (val) {
-  if (this.indexOf(val) < 0)
+  if (!this.contains(val))
     this.push(val);
 };
 
@@ -223,16 +226,20 @@ function main() {
             case 'like':
               board = boards[data.board];
               idea = board.getIdea(data.id);
-              idea.likes.add(data.user);
-              idea.dislikes.remove(data.user);
+              if (idea.dislikes.contains(data.user))
+                idea.dislikes.remove(data.user);
+              else
+                idea.likes.add(data.user);
               board.sendToAllUsers(idea);
               board.save();
               break;
             case 'dislike':
               board = boards[data.board];
               idea = board.getIdea(data.id);
-              idea.dislikes.add(data.user);
-              idea.likes.remove(data.user);
+              if (idea.likes.contains(data.user))
+                idea.likes.remove(data.user);
+              else
+                idea.dislikes.add(data.user);
               board.sendToAllUsers(idea);
               board.save();
               break;
