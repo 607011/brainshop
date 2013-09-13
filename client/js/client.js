@@ -2,7 +2,7 @@
 // All rights reserved.
 
 var Brainstorm = (function () {
-  "use strict";
+  'use strict';
 
   var HOST = document.location.hostname;
   var PORT = 8889;
@@ -52,13 +52,14 @@ var Brainstorm = (function () {
       $('.message').css('opacity', 1);
       $('#input').removeAttr('disabled').trigger('focus');
       $('#uid').removeAttr('disabled');
+      $('#available-boards').empty();
+      $('#board').empty();
       $('#status').attr('class', 'ok').text('connected');
       if (reconnectTimer !== null) {
         clearInterval(reconnectTimer);
         reconnectTimer = null;
       }
       connectionEstablished = true;
-      $('#board').empty();
       send({ type: 'command', command: 'init', board: boardName });
     };
     socket.onerror = function (error) {
@@ -89,7 +90,7 @@ var Brainstorm = (function () {
     };
 
     socket.onmessage = function (e) {
-      var data = JSON.parse(e.data), i;
+      var data = JSON.parse(e.data), i, ok, option;
       switch (data.type) {
         case 'idea':
           if ($('#idea-' + data.id).length > 0) {
@@ -111,10 +112,9 @@ var Brainstorm = (function () {
               )
               .append($('<span class="icon trash" title="in den Müll"></span>')
                 .click(function (e) {
-                  var ok = confirm("Wirklich löschen?");
-                  if (ok) {
+                  ok = confirm('Eintrag "' + data.text + '" (#' + data.id + ') wirklich löschen?');
+                  if (ok)
                     send({ type: 'command', board: boardName, command: 'delete', id: data.id });
-                  }
                 }
               )
             );
@@ -141,7 +141,7 @@ var Brainstorm = (function () {
           break;
         case 'board-list':
           for (i in data.boards) {
-            var option = $('<option value="' + data.boards[i] + '">' + data.boards[i] + '</option>');
+            option = $('<option value="' + data.boards[i] + '">' + data.boards[i] + '</option>');
             $('#available-boards').append(option);
             if (data.boards[i] === boardName)
               option.attr('selected', 'selected');

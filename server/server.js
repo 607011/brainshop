@@ -6,80 +6,100 @@ var WebSocketServer = require('ws').Server;
 var http = require('http');
 var https = require('https');
 var url = require('url');
-var board = { 'Brainstorm': { 'ideas': [], 'users': [] , 'lastId': 0 } }
-var lastId = {};
-var board = {};
-var users = {};
+var boards = {};
 var wss;
 
 function pad0(x) {
   return ('00' + x.toFixed()).slice(-2);
 }
 
-function makeBoardFileName(boardName) {
-  return 'boards/' + boardName + '.json';
+Array.prototype.each = function (callback) {
+  for (var i = 0; i < this.length; ++i)
+    callback(i, this[i]);
 }
 
-function getIdea(boardName, id) {
-  var ideas = board[boardName] || [];
-  for (var i = 0; i < ideas.length; ++i)
-    if (id === ideas[i].id)
-      return ideas[i];
+var Board = function (name) {
+  this.name = name;
+  this.fileName = this.makeFileName();
+  this.users = [];
+  this.ideas = [];
+  this.lastId = 0;
+  if (typeof name === 'string')
+    this.load(name);
 }
-
-function getIdeaIndex(boardName, id) {
-  var ideas = board[boardName] || [];
-  for (var i = 0; i < ideas.length; ++i)
-    if (id === ideas[i].id)
+Board.prototype.makeFileName = function () {
+  return 'boards/' + this.name + '.json';
+}
+Board.loadAll = function () {
+  boards = {};
+  var d = fs.readdirSync('boards');
+  d.each(function (i, boardFileName) {
+    var m = boardFileName.match(/(.+)\.json$/);
+    if (m.length > 1) {
+      var name = m[1];
+      var board = new Board(name);
+      boards[name] = board;
+    }
+  });
+}
+Board.prototype.addIdea = function (idea) {
+  this.ideas.push(idea);
+}
+Board.prototype.addUser = function (user) {
+  this.users.push(user);
+}
+Board.prototype.load = function () {
+  this.ideas = (fs.existsSync(this.fileName)) ? JSON.parse(fs.readFileSync(this.fileName, { encoding: 'utf8' })) : [];
+  this.getLastId();
+  console.log('Board "%s" loaded, lastId = %d', this.name, this.lastId);
+}
+Board.prototype.getIdea = function (id) {
+  for (var i = 0; i < this.ideas.length; ++i)
+    if (id === this.ideas[i].id)
+      return this.ideas[i];
+}
+Board.prototype.setIdea = function (idea) {
+  this.ideas[this.getIdeaIndex(idea.id)] = idea;
+}
+Board.prototype.getIdeaIndex = function (id) {
+  for (var i = 0; i < this.ideas.length; ++i)
+    if (id === this.ideas[i].id)
       return i;
 }
-
-function removeIdea(boardName, id) {
-  var ideas = board[boardName] || [];
-  for (var i = 0; i < ideas.length; ++i)
-    if (id === ideas[i].id)
-      ideas.splice(i, 1);
+Board.prototype.removeIdea = function (id) {
+  for (var i = 0; i < this.ideas.length; ++i)
+    if (id === this.ideas[i].id)
+      this.ideas.splice(i, 1);
 }
-
-function getLastId(boardName) {
-  lastId[boardName] = 0;
-  var ideas = board[boardName] || [];
-  for (var i = 0; i < ideas.length; ++i)
-    if (ideas[i].id > lastId[boardName])
-      lastId[boardName] = ideas[i].id;
+Board.prototype.incId = function () {
+  return ++this.lastId;
 }
-
-function saveIdeas(boardName) {
-  var fileName = makeBoardFileName(boardName);
-  var ideas = board[boardName] || [];
-  fs.writeFileSync(fileName, JSON.stringify(ideas), { flag: 'w+', encoding: 'utf8' });
+Board.prototype.getLastId = function () {
+  this.lastId = 0;
+  for (var i = 0; i < this.ideas.length; ++i)
+    if (this.ideas[i].id > this.lastId)
+      this.lastId = this.ideas[i].id;
 }
-
-function loadIdeas(boardName) {
-  var fileName = makeBoardFileName(boardName);
-  board[boardName] = (fs.existsSync(fileName)) ? JSON.parse(fs.readFileSync(fileName, { encoding: 'utf8' })) : [];
-  getLastId(boardName);
+Board.prototype.save = function () {
+  fs.writeFileSync(this.fileName, JSON.stringify(this.ideas), { flag: 'w+', encoding: 'utf8' });
 }
-
-function loadBoards() {
-}
-
-function sendToAllUsers(boardName, message) {
+Board.prototype.sendToAllUsers = function (message) {
   var msg = JSON.stringify(message), invalid = {}, i;
-  for (i = 0; i < users[boardName].length; ++i) {
+  for (i = 0; i < this.users.length; ++i) {
     try {
-      users[boardName][i].send(msg);
+      this.users[i].send(msg);
     }
     catch (ex) {
       invalid[i] = true;
     }
   }
+  // remove invalid connections
   var u = [];
-  for (i = 0; i < users[boardName].length; ++i) {
+  for (i = 0; i < this.users.length; ++i) {
     if (!(i in invalid))
-      u.push(users[boardName][i]);
+      u.push(this.users[i]);
   }
-  users[boardName] = u;
+  this.users = u;
 }
 
 function main() {
@@ -111,60 +131,63 @@ function main() {
   https.createServer({ key: privateKey, cert: certificate }, httpServer).listen(8887);
   http.createServer(httpServer).listen(8888);
 
-  loadBoards();
+  Board.loadAll();
 
   wss = new WebSocketServer({ port: 8889 });
   wss.on('connection', function (ws) {
     ws.on('message', function (message) {
-      var data = JSON.parse(message || '{}'), idea, ideas, now, i;
+      var data = JSON.parse(message || '{}'), idea, ideas, now, i, board;
       switch (data.type) {
         case 'idea':
           now = new Date;
           data.date = now.getFullYear() + '-' + pad0(now.getMonth() + 1) + '-' + pad0(now.getDate()) + ' ' + pad0(now.getHours()) + ':' + pad0(now.getMinutes());
+          board = boards[data.board];
           if (typeof data.id === 'undefined') {
             // new entry
-            data.id = ++lastId[data.board];
-            board[data.board].push(data);
+            data.id = board.incId();
+            board.addIdea(data);
           }
           else {
             // update entry
-            ideas = board[data.board];
-            ideas[getIdeaIndex(data.board, data.id)] = data;
+            board.setIdea(data);
           }
-          sendToAllUsers(data.board, data);
-          saveIdeas(data.board);
+          board.sendToAllUsers(data);
+          board.save();
           break;
         case 'command':
           switch (data.command) {
             case 'init':
-              if (typeof board[data.board] === 'undefined')
-                loadIdeas(data.board);
-              ideas = board[data.board];
-              if (typeof users[data.board] === 'undefined')
-                users[data.board] = [];
-              users[data.board].push(ws);
-              for (i = 0; i < ideas.length; ++i)
-                ws.send(JSON.stringify(ideas[i]));
-              ws.send(JSON.stringify({ type: 'board-list', boards: Object.keys(board) }));
+              board = boards[data.board];
+              if (typeof board === 'undefined') {
+                board = new Board(data.board);
+                boards[data.board] = board;
+              }
+              board.addUser(ws);
+              for (i = 0; i < board.ideas.length; ++i)
+                ws.send(JSON.stringify(board.ideas[i]));
+              ws.send(JSON.stringify({ type: 'board-list', boards: Object.keys(boards) }));
               break;
             case 'delete':
-              sendToAllUsers(data.board, { type: 'command', board: data.board, command: 'delete', id: data.id });
-              removeIdea(data.board, data.id);
-              saveIdeas(data.board);
+              board = boards[data.board];
+              board.sendToAllUsers({ type: 'command', board: data.board, command: 'delete', id: data.id });
+              board.removeIdea(data.id);
+              board.save();
               break;
             case 'like':
-              idea = getIdea(data.board, data.id);
+              board = boards[data.board];
+              idea = board.getIdea(data.id);
               idea.likes = idea.likes || 0;
               ++idea.likes;
-              sendToAllUsers(data.board, idea);
-              saveIdeas(data.board);
+              board.sendToAllUsers(idea);
+              board.save();
               break;
             case 'dislike':
-              idea = getIdea(data.board, data.id);
+              board = boards[data.board];
+              idea = board.getIdea(data.id);
               idea.dislikes = idea.dislikes || 0;
               ++idea.dislikes;
-              sendToAllUsers(data.board, idea);
-              saveIdeas(data.board);
+              board.sendToAllUsers(idea);
+              board.save();
               break;
           }
           break;

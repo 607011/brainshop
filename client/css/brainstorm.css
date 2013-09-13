@@ -52,6 +52,7 @@ a {
 
   .message .header {
     display: block;
+    font-size: 8pt;
     background-color: #a9a62f;
     padding: 2px 1px 1px 5px;
     cursor: move;
@@ -142,6 +143,8 @@ a {
   background-color: #ddd;
   font-family: Arial, sans-serif;
   font-size: 10px;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .deleting {
