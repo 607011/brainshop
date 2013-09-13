@@ -27,26 +27,37 @@ var Board = function (name) {
   if (typeof name === 'string')
     this.load(name);
 }
-Board.prototype.makeFileName = function () {
-  return 'boards/' + this.name + '.json';
-}
 Board.loadAll = function () {
-  boards = {};
-  var d = fs.readdirSync('boards');
-  d.each(function (i, boardFileName) {
+  fs.readdirSync('boards').each(function (i, boardFileName) {
     var m = boardFileName.match(/(.+)\.json$/);
     if (m.length > 1) {
-      var name = m[1];
-      var board = new Board(name);
-      boards[name] = board;
+      var board = new Board(m[1]);
+      board.addToBoards();
     }
   });
+}
+Board.informAllUsers = function () {
+  var boardNames = Object.keys(boards);
+  boardNames.each(function (i, boardName) {
+    boards[boardName].users.each(function (i, ws) {
+      try {
+        ws.send(JSON.stringify({ type: 'board-list', boards: boardNames }));
+      }
+      catch (e) { console.error(e); }
+    });
+  })
+}
+Board.prototype.makeFileName = function () {
+  return 'boards/' + this.name + '.json';
 }
 Board.prototype.addIdea = function (idea) {
   this.ideas.push(idea);
 }
 Board.prototype.addUser = function (user) {
   this.users.push(user);
+}
+Board.prototype.addToBoards = function () {
+  boards[this.name] = this;
 }
 Board.prototype.load = function () {
   this.ideas = (fs.existsSync(this.fileName)) ? JSON.parse(fs.readFileSync(this.fileName, { encoding: 'utf8' })) : [];
@@ -106,7 +117,10 @@ function main() {
   function httpServer(req, res) {
     var pathName = url.parse(req.url).pathname;
     if (pathName === '/all') {
+      res.writeHead(200, { 'Content-type': 'text/json' });
       // TODO: send JSON file with board contents
+      res.write();
+      res.end();
     }
     else {
       if (pathName === '/')
@@ -161,11 +175,14 @@ function main() {
               if (typeof board === 'undefined') {
                 board = new Board(data.board);
                 boards[data.board] = board;
+                Board.informAllUsers();
+              }
+              else {
+                ws.send(JSON.stringify({ type: 'board-list', boards: Object.keys(boards) }));
               }
               board.addUser(ws);
               for (i = 0; i < board.ideas.length; ++i)
                 ws.send(JSON.stringify(board.ideas[i]));
-              ws.send(JSON.stringify({ type: 'board-list', boards: Object.keys(boards) }));
               break;
             case 'delete':
               board = boards[data.board];
