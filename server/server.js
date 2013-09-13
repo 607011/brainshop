@@ -167,6 +167,7 @@ function main() {
           }
           board.sendToAllUsers(data);
           board.save();
+          ws.send(JSON.stringify({ type: 'finished' }));
           break;
         case 'command':
           switch (data.command) {
@@ -183,10 +184,12 @@ function main() {
               board.addUser(ws);
               for (i = 0; i < board.ideas.length; ++i)
                 ws.send(JSON.stringify(board.ideas[i]));
+              ws.send(JSON.stringify({ type: 'finished'}));
               break;
             case 'delete':
+
               board = boards[data.board];
-              board.sendToAllUsers({ type: 'command', board: data.board, command: 'delete', id: data.id });
+              board.sendToAllUsers({ type: 'command', command: 'delete', board: data.board, id: data.id });
               board.removeIdea(data.id);
               board.save();
               break;

@@ -33,6 +33,7 @@ var Brainstorm = (function () {
     else {
       send({ board: boardName, type: 'idea', id: id, text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() });
     }
+    $('#new-idea').remove();
   }
 
   function updateIdea(data) {
@@ -97,7 +98,7 @@ var Brainstorm = (function () {
             updateIdea(data);
           }
           else {
-            var header = $('<div class="header"></div>')
+            var header = $('<span class="header"></span>')
               .append($('<span>' + (data.likes || 0) + '</span>').attr('id', 'likes-' + data.id))
               .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
                 .click(function (e) {
@@ -118,13 +119,13 @@ var Brainstorm = (function () {
                 }
               )
             );
-            var idea = $('<div class="message" id="idea-' + data.id + '">'
-              + '<div class="body"><span class="idea" id="idea-text-' + data.id + '">' + data.text + '</span></div>'
-              + '<div class="footer">'
+            var idea = $('<span class="message" id="idea-' + data.id + '">'
+              + '<span class="body"><span class="idea" id="idea-text-' + data.id + '">' + data.text + '</span></span>'
+              + '<span class="footer">'
               + '<span class="date">' + data.date + '</span>'
               + '<span class="user" id="user-' + data.id + '">' + data.user + '</span>'
-              + '</div>'
-              + '</div>');
+              + '</span>'
+              + '</span>');
             idea.prepend(header);
             $('#board').append(idea);
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
@@ -140,15 +141,31 @@ var Brainstorm = (function () {
           }
           break;
         case 'board-list':
+          $('#available-boards').empty();
           for (i in data.boards) {
-            option = $('<option value="' + data.boards[i] + '">' + data.boards[i] + '</option>');
+            var name = data.boards[i];
+            var header = $('<span class="header"></span>')
+              .append($('<span class="icon trash" title="in den Müll"></span>')
+                .click(function (e) {
+                  alert('nicht implementiert');
+                  e.preventDefault();
+                }
+              ));
+            var option = $('<span class="board" title="' + name + '">'
+              + '<span class="body">' + name + '</span>'
+              + '</span>')
+              .click(function (e) {
+                document.location.search = '?board=' + $(this).text();
+              });
+            if (name === boardName)
+              option.addClass('active');
+            option.prepend(header);
             $('#available-boards').append(option);
-            if (data.boards[i] === boardName)
-              option.attr('selected', 'selected');
           }
-          $('#available-boards').change(function (e) {
-            document.location.search = '?board=' + this.options[this.options.selectedIndex].value;
-          });
+          // $('.board.active').prependTo($('#available-boards'));
+          break;
+        case 'finished':
+          newIdeaBox();
           break;
         case 'command':
           switch (data.command) {
@@ -175,7 +192,6 @@ var Brainstorm = (function () {
       switch (key) {
         case 'board':
           boardName = decodeURIComponent(val).trimmed();
-          $('h1').text(boardName);
           break;
         default: // ignore any other parameter
           break;
@@ -183,22 +199,31 @@ var Brainstorm = (function () {
     });
   }
 
+  function newIdeaBox() {
+    var idea = $('<span class="message" id="new-idea">'
+      + '<span class="header"></span>'
+      + '<span class="body">'
+      + '<input type="text" id="input" placeholder="meine tolle Idee" size="30" />'
+      + '</span>'
+      + '</span>');
+    $('#board').append(idea);
+    $('#input').bind('keyup', function (e) {
+      if (e.keyCode === 13)
+        sendIdea();
+      if (e.target.value.length > 100)
+        e.preventDefault();
+    });
+  }
+
   return {
     init: function () {
       evaluateURLParameters();
       user = localStorage.getItem('user') || '';
-      $('h1').text(boardName);
       if (user === '') {
         $('#uid').attr('class', 'pulse');
         alert('Du bist das erste Mal hier. Zum Mitmachen trage bitte dein Kürzel in das blinkende Feld ein.');
       }
       openSocket();
-      $('#input').bind('keyup', function (e) {
-        if (e.keyCode === 13)
-          sendIdea();
-        if (e.target.value.length > 100)
-          e.preventDefault();
-      });
       $('#uid').val(user).bind({
         keypress: function (e) {
           if (e.target.value.length > 4)
