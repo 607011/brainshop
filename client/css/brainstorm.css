@@ -17,6 +17,7 @@ body {
 #app-name {
   font-weight: bold;
   font-size: 8pt;
+  font-style: italic;
   text-transform: uppercase;
   letter-spacing: 1px;
   clear: both;

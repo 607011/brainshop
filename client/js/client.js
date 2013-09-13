@@ -20,6 +20,8 @@ var Brainstorm = (function () {
   }
 
   function send(message) {
+    if (typeof message.user === 'undefined')
+      message.user = user;
     socket.send(JSON.stringify(message));
   }
 
@@ -37,8 +39,8 @@ var Brainstorm = (function () {
   }
 
   function updateIdea(data) {
-    $('#likes-' + data.id).text(data.likes);
-    $('#dislikes-' + data.id).text(data.dislikes);
+    $('#likes-' + data.id).text(data.likes.length);
+    $('#dislikes-' + data.id).text(data.dislikes.length);
     $('#idea-text-' + data.id).html(data.text);
     $('#idea-' + data.id).addClass('blink-once');
     setTimeout(function () {
@@ -98,14 +100,16 @@ var Brainstorm = (function () {
             updateIdea(data);
           }
           else {
+            data.likes = data.likes || [];
+            data.dislikes = data.dislikes || [];
             var header = $('<span class="header"></span>')
-              .append($('<span>' + (data.likes || 0) + '</span>').attr('id', 'likes-' + data.id))
+              .append($('<span>' + data.likes.length + '</span>').attr('id', 'likes-' + data.id))
               .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
                 .click(function (e) {
                   send({ type: 'command', command: 'like', board: boardName, id: data.id });
                 })
               )
-              .append($('<span>' + (data.dislikes || 0) + '</span>').attr('id', 'dislikes-' + data.id))
+              .append($('<span>' + data.dislikes.length + '</span>').attr('id', 'dislikes-' + data.id))
               .append($('<span class="icon thumb-down" title="Nicht so doll"></span>')
                 .click(function (e) {
                   send({ type: 'command', command: 'dislike', board: boardName, id: data.id });
@@ -213,6 +217,7 @@ var Brainstorm = (function () {
       if (e.target.value.length > 100)
         e.preventDefault();
     });
+    idea.trigger('focus');
   }
 
   return {

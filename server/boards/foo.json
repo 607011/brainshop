@@ -1,1 +1,1 @@
-[{"board":"foo","type":"idea","text":"Demo","user":"ola","date":"2013-09-12 18:19","id":1}]
+[{"board":"foo","type":"idea","text":"Demo","user":"ola","date":"2013-09-12 18:19","id":1,"likes":["ola"],"dislikes":["ola"]}]

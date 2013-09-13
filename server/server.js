@@ -96,6 +96,7 @@ Board.prototype.save = function () {
 }
 Board.prototype.sendToAllUsers = function (message) {
   var msg = JSON.stringify(message), invalid = {}, i;
+  console.log(message);
   for (i = 0; i < this.users.length; ++i) {
     try {
       this.users[i].send(msg);
@@ -182,12 +183,14 @@ function main() {
                 ws.send(JSON.stringify({ type: 'board-list', boards: Object.keys(boards) }));
               }
               board.addUser(ws);
-              for (i = 0; i < board.ideas.length; ++i)
-                ws.send(JSON.stringify(board.ideas[i]));
+              for (i = 0; i < board.ideas.length; ++i) {
+                idea = board.ideas[i];
+                console.log('command.init -> ', idea);
+                ws.send(JSON.stringify(idea));
+              }
               ws.send(JSON.stringify({ type: 'finished'}));
               break;
             case 'delete':
-
               board = boards[data.board];
               board.sendToAllUsers({ type: 'command', command: 'delete', board: data.board, id: data.id });
               board.removeIdea(data.id);
@@ -196,16 +199,20 @@ function main() {
             case 'like':
               board = boards[data.board];
               idea = board.getIdea(data.id);
-              idea.likes = idea.likes || 0;
-              ++idea.likes;
+              if (typeof idea.likes !== 'array')
+                idea.likes = []
+              if (idea.likes.indexOf(data.user) < 0)
+                idea.likes.push(data.user);
               board.sendToAllUsers(idea);
               board.save();
               break;
             case 'dislike':
               board = boards[data.board];
               idea = board.getIdea(data.id);
-              idea.dislikes = idea.dislikes || 0;
-              ++idea.dislikes;
+              if (typeof idea.dislikes !== 'array')
+                idea.dislikes = []
+              if (idea.dislikes.indexOf(data.user) < 0)
+                idea.dislikes.push(data.user);
               board.sendToAllUsers(idea);
               board.save();
               break;
