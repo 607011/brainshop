@@ -17,6 +17,15 @@ Array.prototype.each = function (callback) {
   for (var i = 0; i < this.length; ++i)
     callback(i, this[i]);
 }
+Array.prototype.remove = function (val) {
+  var idx = this.indexOf(val);
+  if (idx >= 0)
+    this.splice(idx, 1);
+};
+Array.prototype.add = function (val) {
+  if (this.indexOf(val) < 0)
+    this.push(val);
+};
 
 var Board = function (name) {
   this.name = name;
@@ -66,8 +75,14 @@ Board.prototype.load = function () {
 }
 Board.prototype.getIdea = function (id) {
   for (var i = 0; i < this.ideas.length; ++i)
-    if (id === this.ideas[i].id)
-      return this.ideas[i];
+    if (id === this.ideas[i].id) {
+      var idea = this.ideas[i];
+      if (typeof idea.likes === 'undefined')
+        idea.likes = [];
+      if (typeof idea.dislikes === 'undefined')
+        idea.dislikes = [];
+      return idea;
+    }
 }
 Board.prototype.setIdea = function (idea) {
   this.ideas[this.getIdeaIndex(idea.id)] = idea;
@@ -208,21 +223,16 @@ function main() {
             case 'like':
               board = boards[data.board];
               idea = board.getIdea(data.id);
-              console.log('like -> ', idea);
-              if (typeof idea.likes !== 'array')
-                idea.likes = []
-              if (idea.likes.indexOf(data.user) < 0)
-                idea.likes.push(data.user);
+              idea.likes.add(data.user);
+              idea.dislikes.remove(data.user);
               board.sendToAllUsers(idea);
               board.save();
               break;
             case 'dislike':
               board = boards[data.board];
               idea = board.getIdea(data.id);
-              if (typeof idea.dislikes !== 'array')
-                idea.dislikes = []
-              if (idea.dislikes.indexOf(data.user) < 0)
-                idea.dislikes.push(data.user);
+              idea.dislikes.add(data.user);
+              idea.likes.remove(data.user);
               board.sendToAllUsers(idea);
               board.save();
               break;

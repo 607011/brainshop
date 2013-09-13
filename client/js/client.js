@@ -13,7 +13,7 @@ var Brainstorm = (function () {
   var retry_secs;
   var reconnectTimer = null;
   var user;
-  var boardName = 'Brainstorm';
+  var boardName;
 
   String.prototype.trimmed = function () {
     return this.replace(/^\s+/, '').replace(/\s+$/, '');
@@ -39,8 +39,8 @@ var Brainstorm = (function () {
   }
 
   function updateIdea(data) {
-    $('#likes-' + data.id).text(typeof data.likes !== 'array' ? 0 : data.likes.length);
-    $('#dislikes-' + data.id).text(typeof data.likes !== 'array' ? 0 : data.dislikes.length);
+    $('#likes-' + data.id).text(data.likes.length);
+    $('#dislikes-' + data.id).text(data.dislikes.length);
     $('#idea-text-' + data.id).html(data.text);
     $('#idea-' + data.id).addClass('blink-once');
     setTimeout(function () {
@@ -56,6 +56,12 @@ var Brainstorm = (function () {
   function boardChanged() {
     clear();
     send({ type: 'command', command: 'init', board: boardName });
+  }
+
+  function setBoard(name) {
+    boardName = name;
+    localStorage.setItem('lastBoardName', boardName);
+    boardChanged();
   }
 
   function openSocket() {
@@ -168,8 +174,7 @@ var Brainstorm = (function () {
               + '<span class="body">' + name + '</span>'
               + '</span>')
               .click(function (e) {
-                boardName = $(this).text();
-                boardChanged();
+                setBoard($(this).text());
               });
             if (name === boardName)
               board.addClass('active');
@@ -185,8 +190,7 @@ var Brainstorm = (function () {
           $('#new-board').bind('keyup', function (e) {
             if (e.keyCode === 13) {
               if (e.target.value != '') {
-                boardName = e.target.value;
-                boardChanged();
+                setBoard(e.target.value);
               }
             }
             if (e.target.value.length > 20)
@@ -233,6 +237,7 @@ var Brainstorm = (function () {
   return {
     init: function () {
       user = localStorage.getItem('user') || '';
+      boardName = localStorage.getItem('lastBoardName') || 'Brainstorm';
       if (user === '') {
         $('#uid').attr('class', 'pulse');
         alert('Du bist das erste Mal hier. Zum Mitmachen trage bitte dein Kürzel in das blinkende Feld ein.');

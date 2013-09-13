@@ -143,7 +143,7 @@ a {
 #main .board {
   display: inline-block;
   background-color: #406241;
-  color: #a0cca1;
+  color: #758375;
   overflow: hidden;
   font-weight: bold;
   font-size: 21pt;
@@ -168,7 +168,6 @@ a {
     -moz-user-select: none;
     -ms-user-select: none;
     height: 15px;
-    color: #5e945f;
   }
 
   #main .board.active {
