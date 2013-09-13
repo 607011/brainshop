@@ -7,16 +7,23 @@ body, html {
   background-color: #25273c;
   color: #111;
   font-family: Arial, sans-serif;
-  font-size: 11px;
+  font-size: 10pt;
 }
 
 body {
   padding: 1px;
 }
 
+#app-name {
+  font-weight: bold;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 h1 {
   font-weight: bold;
-  font-size: 32px;
+  font-size: 24pt;
 }
 
 a {
@@ -63,7 +70,7 @@ a {
 
   .message .body .idea {
     display: block;
-    font-size: 17px;
+    font-size: 15pt;
   }
 
   .message .footer {
@@ -90,7 +97,7 @@ a {
     margin-left: 2px;
     width: 11px;
     height: 12px;
-    background-image: url(header-icons.png);
+    background-image: url(../img/header-icons.png);
   }
 
     .message .header .icon.thumb-up {
@@ -105,33 +112,25 @@ a {
       background-position: -22px 0;
     }
 
-
-.pin {
-  position: absolute;
-  right: 0;
-  top: 0;
-  background-image: url(pin.png);
-  width: 11px;
-  height: 19px;
-  cursor: pointer;
-}
-
 #main {
   background-color: #5e945f;
-  padding: 5px;
   margin: 1px;
-  width: 50%;
   color: white;
   position: relative;
 }
 
-footer {
-  background-color: #5e9491;
-  padding: 5px;
-  color: white;
-  position: fixed;
-  margin: 1px;
-  bottom: 0;
+  #main .header {
+    background-color: #486549;
+    color: #eee;
+    padding: 1px 2px;
+  }
+
+  #main .body {
+    padding: 5px 2px;
+  }
+
+#available-boards {
+  float: right;
 }
 
 #status {
@@ -156,19 +155,16 @@ footer {
 }
 
 .blink-once {
-  animation: blink 1s ease;
-  -webkit-animation: blink 1s ease;
-  -moz-animation: blink 1s ease;
-  -ms-animation: blink 1s easee;
-  -o-animation: blink 1s ease;
+  animation: blink 0.3s ease;
+  -webkit-animation: blink 0.3s ease;
+  -moz-animation: blink 0.3s ease;
+  -ms-animation: blink 0.3s easee;
 }
 
-@keyframes blink { 50% { background-color: rgba(255, 255, 255, 1.0); }}
-@-webkit-keyframes blink { 50% { background-color: rgba(255, 255, 255, 1.0); } }
-@-moz-keyframes blink { 50% { background-color: rgba(255, 255, 255, 1.0); }}
-@-ms-keyframes blink { 50% { background-color: rgba(255, 255, 255, 1.0); } }
-@-o-keyframes blink {  50% { background-color: rgba(255, 255, 255, 1.0); } }
-
+@keyframes blink {50% { background-color: rgba(255, 255, 255, 1.0); }}
+@-webkit-keyframes blink {50% { background-color: rgba(255, 255, 255, 1.0); }}
+@-moz-keyframes blink {50% { background-color: rgba(255, 255, 255, 1.0); }}
+@-ms-keyframes blink {50% { background-color: rgba(255, 255, 255, 1.0); }}
 
 input[type="text"] {
   font-family: Arial, sans-serif;
@@ -189,11 +185,9 @@ input[type="text"] {
   -webkit-animation: pulse 0.2s alternate ease-in-out infinite;
   -moz-animation: pulse 0.2s alternate ease-in-out infinite;
   -ms-animation: pulse 0.2s alternate ease-in-out infinite;
-  -o-animation: pulse 0.2s alternate ease-in-out infinite;
 }
 
 @keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}
 @-webkit-keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}
 @-moz-keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}
 @-ms-keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}
-@-o-keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}

@@ -2,6 +2,8 @@
 // All rights reserved.
 
 var Brainstorm = (function () {
+  "use strict";
+
   var HOST = document.location.hostname;
   var PORT = 8889;
   var URL = 'ws://' + HOST + ':' + PORT + '/';
@@ -13,6 +15,10 @@ var Brainstorm = (function () {
   var user;
   var boardName = 'Brainstorm';
 
+  String.prototype.trimmed = function () {
+    return this.replace(/^\s+/, '').replace(/\s+$/, '');
+  }
+
   function send(message) {
     socket.send(JSON.stringify(message));
   }
@@ -21,11 +27,11 @@ var Brainstorm = (function () {
     if (user === '')
       return;
     if (typeof id === 'undefined') {
-      send({ board: boardName, type: 'idea', text: $('#input').val(), user: user });
+      send({ board: boardName, type: 'idea', text: $('#input').val().trimmed(), user: user });
       $('#input').val('');
     }
     else {
-      send({ board: boardName, type: 'idea', id: id, text: $('#idea-text-' + id).html(), user: $('#user-' + id).text() });
+      send({ board: boardName, type: 'idea', id: id, text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() });
     }
   }
 
@@ -36,7 +42,7 @@ var Brainstorm = (function () {
     $('#idea-' + data.id).addClass('blink-once');
     setTimeout(function () {
       $('#idea-' + data.id).removeClass('blink-once');
-    }, 1000);
+    }, 300);
   }
 
   function openSocket() {
@@ -83,7 +89,7 @@ var Brainstorm = (function () {
     };
 
     socket.onmessage = function (e) {
-      var data = JSON.parse(e.data);
+      var data = JSON.parse(e.data), i;
       switch (data.type) {
         case 'idea':
           if ($('#idea-' + data.id).length > 0) {
@@ -94,20 +100,20 @@ var Brainstorm = (function () {
               .append($('<span>' + (data.likes || 0) + '</span>').attr('id', 'likes-' + data.id))
               .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
                 .click(function (e) {
-                  socket.send(JSON.stringify({ type: 'command', command: 'like', board: boardName, id: data.id }));
+                  send({ type: 'command', command: 'like', board: boardName, id: data.id });
                 })
               )
               .append($('<span>' + (data.dislikes || 0) + '</span>').attr('id', 'dislikes-' + data.id))
               .append($('<span class="icon thumb-down" title="Nicht so doll"></span>')
                 .click(function (e) {
-                  socket.send(JSON.stringify({ type: 'command', command: 'dislike', board: boardName, id: data.id }));
+                  send({ type: 'command', command: 'dislike', board: boardName, id: data.id });
                 })
               )
               .append($('<span class="icon trash" title="in den Müll"></span>')
                 .click(function (e) {
                   var ok = confirm("Wirklich löschen?");
                   if (ok) {
-                    socket.send(JSON.stringify({ type: 'command', board: boardName, command: 'delete', id: data.id }));
+                    send({ type: 'command', board: boardName, command: 'delete', id: data.id });
                   }
                 }
               )
@@ -123,7 +129,6 @@ var Brainstorm = (function () {
             $('#board').append(idea);
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
               keypress: function (e) {
-                console.log(e);
                 if (e.keyCode === 13) {
                   if (!e.shiftKey) {
                     sendIdea(data.id);
@@ -133,6 +138,17 @@ var Brainstorm = (function () {
               }
             });
           }
+          break;
+        case 'board-list':
+          for (i in data.boards) {
+            var option = $('<option value="' + data.boards[i] + '">' + data.boards[i] + '</option>');
+            $('#available-boards').append(option);
+            if (data.boards[i] === boardName)
+              option.attr('selected', 'selected');
+          }
+          $('#available-boards').change(function (e) {
+            document.location.search = '?board=' + this.options[this.options.selectedIndex].value;
+          });
           break;
         case 'command':
           switch (data.command) {
@@ -158,7 +174,7 @@ var Brainstorm = (function () {
       var key = param[0], val = param[1];
       switch (key) {
         case 'board':
-          boardName = decodeURIComponent(val);
+          boardName = decodeURIComponent(val).trimmed();
           $('h1').text(boardName);
           break;
         default: // ignore any other parameter
@@ -190,7 +206,7 @@ var Brainstorm = (function () {
         },
         keyup: function (e) {
           if (e.target.value !== '') {
-            user = e.target.value;
+            user = e.target.value.trimmed();
             localStorage.setItem('user', user);
             $('#uid').removeClass('pulse');
           }
