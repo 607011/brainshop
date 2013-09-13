@@ -30,7 +30,7 @@ var Board = function (name) {
 Board.loadAll = function () {
   fs.readdirSync('boards').each(function (i, boardFileName) {
     var m = boardFileName.match(/(.+)\.json$/);
-    if (m.length > 1) {
+    if (m && m.length > 1) {
       var board = new Board(m[1]);
       board.addToBoards();
     }
@@ -96,7 +96,6 @@ Board.prototype.save = function () {
 }
 Board.prototype.sendToAllUsers = function (message) {
   var msg = JSON.stringify(message), invalid = {}, i;
-  console.log(message);
   for (i = 0; i < this.users.length; ++i) {
     try {
       this.users[i].send(msg);
@@ -152,6 +151,7 @@ function main() {
   wss.on('connection', function (ws) {
     ws.on('message', function (message) {
       var data = JSON.parse(message || '{}'), idea, ideas, now, i, board;
+      console.log('message received: ', message);
       switch (data.type) {
         case 'idea':
           now = new Date;
@@ -160,19 +160,28 @@ function main() {
           if (typeof data.id === 'undefined') {
             // new entry
             data.id = board.incId();
+            data.likes = [];
+            data.dislikes = [];
             board.addIdea(data);
+            board.sendToAllUsers(data);
+            console.log('new entry: ', data);
           }
           else {
             // update entry
-            board.setIdea(data);
+            idea = board.getIdea(data.id);
+            idea.text = data.text;
+            board.setIdea(idea);
+            board.sendToAllUsers(idea);
+            console.log('update entry: ', idea);
           }
-          board.sendToAllUsers(data);
           board.save();
           ws.send(JSON.stringify({ type: 'finished' }));
           break;
         case 'command':
           switch (data.command) {
             case 'init':
+              if (typeof data.board === 'undefined' || data.board === '')
+                return;
               board = boards[data.board];
               if (typeof board === 'undefined') {
                 board = new Board(data.board);
@@ -185,7 +194,7 @@ function main() {
               board.addUser(ws);
               for (i = 0; i < board.ideas.length; ++i) {
                 idea = board.ideas[i];
-                console.log('command.init -> ', idea);
+                console.log('command.init -> sending ', idea);
                 ws.send(JSON.stringify(idea));
               }
               ws.send(JSON.stringify({ type: 'finished'}));
@@ -199,6 +208,7 @@ function main() {
             case 'like':
               board = boards[data.board];
               idea = board.getIdea(data.id);
+              console.log('like -> ', idea);
               if (typeof idea.likes !== 'array')
                 idea.likes = []
               if (idea.likes.indexOf(data.user) < 0)

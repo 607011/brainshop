@@ -17,7 +17,6 @@ body {
 #app-name {
   font-weight: bold;
   font-size: 8pt;
-  font-style: italic;
   text-transform: uppercase;
   letter-spacing: 1px;
   clear: both;
@@ -169,6 +168,7 @@ a {
     -moz-user-select: none;
     -ms-user-select: none;
     height: 15px;
+    color: #5e945f;
   }
 
   #main .board.active {
@@ -180,9 +180,15 @@ a {
     font-size: 24pt;
   }
 
+  #main .board input[type="text"]#new-board {
+    font-size: 13pt;
+    font-weight: bold;
+  }
+
 .group {
   float: left;
 }
+
 
 #available-boards {
 }

@@ -39,13 +39,23 @@ var Brainstorm = (function () {
   }
 
   function updateIdea(data) {
-    $('#likes-' + data.id).text(data.likes.length);
-    $('#dislikes-' + data.id).text(data.dislikes.length);
+    $('#likes-' + data.id).text(typeof data.likes !== 'array' ? 0 : data.likes.length);
+    $('#dislikes-' + data.id).text(typeof data.likes !== 'array' ? 0 : data.dislikes.length);
     $('#idea-text-' + data.id).html(data.text);
     $('#idea-' + data.id).addClass('blink-once');
     setTimeout(function () {
       $('#idea-' + data.id).removeClass('blink-once');
     }, 300);
+  }
+
+  function clear() {
+    $('#available-boards').empty();
+    $('#board').empty();
+  }
+
+  function boardChanged() {
+    clear();
+    send({ type: 'command', command: 'init', board: boardName });
   }
 
   function openSocket() {
@@ -55,15 +65,13 @@ var Brainstorm = (function () {
       $('.message').css('opacity', 1);
       $('#input').removeAttr('disabled').trigger('focus');
       $('#uid').removeAttr('disabled');
-      $('#available-boards').empty();
-      $('#board').empty();
       $('#status').attr('class', 'ok').text('connected');
       if (reconnectTimer !== null) {
         clearInterval(reconnectTimer);
         reconnectTimer = null;
       }
       connectionEstablished = true;
-      send({ type: 'command', command: 'init', board: boardName });
+      boardChanged();
     };
     socket.onerror = function (error) {
       $('.message').css('opacity', 0.3);
@@ -93,7 +101,7 @@ var Brainstorm = (function () {
     };
 
     socket.onmessage = function (e) {
-      var data = JSON.parse(e.data), i, ok, option;
+      var data = JSON.parse(e.data), i, ok, board, name, header;
       switch (data.type) {
         case 'idea':
           if ($('#idea-' + data.id).length > 0) {
@@ -134,7 +142,7 @@ var Brainstorm = (function () {
             $('#board').append(idea);
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
               keypress: function (e) {
-                if (e.keyCode === 13) {
+                if (e.keyCode === 64) {
                   if (!e.shiftKey) {
                     sendIdea(data.id);
                     e.preventDefault();
@@ -142,31 +150,48 @@ var Brainstorm = (function () {
                 }
               }
             });
+            $('#new-idea').appendTo('#board');
           }
           break;
         case 'board-list':
           $('#available-boards').empty();
           for (i in data.boards) {
-            var name = data.boards[i];
-            var header = $('<span class="header"></span>')
+            name = data.boards[i];
+            header = $('<span class="header"></span>')
               .append($('<span class="icon trash" title="in den Müll"></span>')
                 .click(function (e) {
                   alert('nicht implementiert');
                   e.preventDefault();
                 }
               ));
-            var option = $('<span class="board" title="' + name + '">'
+            board = $('<span class="board" title="' + name + '">'
               + '<span class="body">' + name + '</span>'
               + '</span>')
               .click(function (e) {
-                document.location.search = '?board=' + $(this).text();
+                boardName = $(this).text();
+                boardChanged();
               });
             if (name === boardName)
-              option.addClass('active');
-            option.prepend(header);
-            $('#available-boards').append(option);
+              board.addClass('active');
+            board.prepend(header);
+            $('#available-boards').append(board);
           }
+          board = $('<span class="board">'
+            + '<span class="header">neues Board</span>'
+            + '<span class="body"><input type="text" id="new-board" placeholder="..." size="7" /></span>'
+            + '</span>');
+          $('#available-boards').append(board);
           // $('.board.active').prependTo($('#available-boards'));
+          $('#new-board').bind('keyup', function (e) {
+            if (e.keyCode === 13) {
+              if (e.target.value != '') {
+                boardName = e.target.value;
+                boardChanged();
+              }
+            }
+            if (e.target.value.length > 20)
+              e.preventDefault();
+          })
           break;
         case 'finished':
           newIdeaBox();
@@ -189,20 +214,6 @@ var Brainstorm = (function () {
     }
   }
 
-  function evaluateURLParameters() {
-    $.each(document.location.search.substring(1).split('&'), function (i, p) {
-      var param = p.split('=');
-      var key = param[0], val = param[1];
-      switch (key) {
-        case 'board':
-          boardName = decodeURIComponent(val).trimmed();
-          break;
-        default: // ignore any other parameter
-          break;
-      }
-    });
-  }
-
   function newIdeaBox() {
     var idea = $('<span class="message" id="new-idea">'
       + '<span class="header"></span>'
@@ -216,13 +227,11 @@ var Brainstorm = (function () {
         sendIdea();
       if (e.target.value.length > 100)
         e.preventDefault();
-    });
-    idea.trigger('focus');
+    }).trigger('focus');
   }
 
   return {
     init: function () {
-      evaluateURLParameters();
       user = localStorage.getItem('user') || '';
       if (user === '') {
         $('#uid').attr('class', 'pulse');
