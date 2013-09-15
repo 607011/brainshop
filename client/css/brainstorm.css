@@ -48,15 +48,17 @@ a {
   display: inline-block;
   margin: 1px;
   min-width: 1px;
-  min-height: 66px;
   position: relative;
 }
 
 .placeholder {
-  background-color: #ddd;
+  background-color: rgba(0,0,0,0.5);
+  min-height: 64px;
+  border: 1px dashed rgba(255,255,255,0.5);
 }
 
 .message {
+  min-height: 66px;
   background-color: #d3cf2e;
 }
 
@@ -78,6 +80,7 @@ a {
   .message .header .handle {
     display: block;
     height: 12px;
+    cursor: pointer;
   }
 
   .message .header .menu {

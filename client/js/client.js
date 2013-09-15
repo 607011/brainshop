@@ -12,44 +12,52 @@ String.prototype.trimmed = function () {
 }
 
 jQuery.fn.moveBetweenGroups = function (el) {
-  var handle = this, target = $(el), dx, dy, placeholder = null, closest = null;
+  var handle = this, target = $(el), dx, dy, placeholder = null;
   this.bind({
-    selectstart: function () { return false; },
     mousedown: function (e) {
       var pos = target.offset();
       dx = e.pageX - pos.left;
       dy = e.pageY - pos.top;
       target.css('cursor', 'move').css('z-index', 9999);
-      $(document).bind('mousemove', function (e) {
-        var maxX = $(window).width() - target.width();
-        var maxY = $(window).height() - target.height();
-        var x = (e.pageX - dx).clamp(0, maxX - 8);
-        var y = (e.pageY - dy).clamp(0, maxY - 8);
-        var display = target.css('display');
-        target.css('display', 'none');
-        var below = $(document.elementFromPoint(e.pageX, e.pageY));
-        closest = below.closest('.message');
-        if (placeholder === null)
-          placeholder = $('<span class="placeholder"></span>').css('width', target.width());
-        closest.before(placeholder);
-        target.css('display', display).css('position', 'absolute').css('left', x + 'px').css('top', y + 'px');
+      $(document).bind({
+        selectstart: function () { return false; },
+        mousemove: function (e) {
+          var closest;
+          var maxX = $(window).width() - target.width();
+          var maxY = $(window).height() - target.height();
+          var x = (e.pageX - dx).clamp(0, maxX - 8);
+          var y = (e.pageY - dy).clamp(0, maxY - 8);
+          var display = target.css('display');
+          target.css('display', 'none');
+          var below = $(document.elementFromPoint(e.pageX, e.pageY));
+          var group = below.filter('.group');
+          if (group.length === 0)
+            group = below.parents('.group');
+          if (group.length === 0) {
+            if (placeholder === null)
+              placeholder = $('<span class="placeholder"></span>').css('width', target.width() - 2);
+            $.event.trigger({ type: 'newgroup', message: { target: placeholder } });
+          }
+          else {
+            closest = below.closest('.message');
+            if (placeholder === null)
+              placeholder = $('<span class="placeholder"></span>').css('width', target.width() - 2);
+            closest.before(placeholder);
+          }
+          target.css('display', display).css('position', 'absolute').css('left', x + 'px').css('top', y + 'px');
+        }
       });
     },
     mouseup: function (e) {
-      $(document).unbind('mousemove');
-      if (closest.length === 0)
-        closest = placeholder;
-      var group = closest.parents('.group');
-      if (group.length === 0) {
-        console.log('new group');
-        $.event.trigger({ type: 'newgroup', message: target });
-      }
-      else {
-        placeholder.replaceWith(target);
-        placeholder = null;
-        $.event.trigger({ type: 'movebetweengroups' });
-      }
+      $(document).unbind('mousemove').unbind('selectstart');
       target.removeAttr('style');
+      if (placeholder === null)
+        return;
+      var groupId = placeholder.parents('.group').attr('data-id');
+      target.attr('data-group', groupId);
+      placeholder.replaceWith(target);
+      $.event.trigger({ type: 'movebetweengroups' });
+      placeholder = null;
     }
   });
   return this;
@@ -200,7 +208,7 @@ var Brainstorm = (function () {
             group = $('#group-' + data.group);
             if (group.length === 0)
               group = newGroup(data.group);
-            msgbox.prepend(header).attr('data-group', data.group);
+            msgbox.prepend(header).attr('data-group', data.group).attr('data-id', data.id);
             group.append(msgbox);
             $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header);
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
@@ -302,16 +310,17 @@ var Brainstorm = (function () {
   }
 
   function newGroup(gID) {
-    var group = $('<span id="group-' + gID + '" class="group"></span>');
+    var group = $('<span id="group-' + gID + '" class="group" data-id="' + gID + '"></span>');
     $('#board').append(group);
     return group;
   }
 
   function newGroupEvent(e) {
-    var target = e.message;
+    var target = e.message.target;
     var group = newGroup(++lastGroup);
     currentGroup = lastGroup;
-    group.append(target);
+    if (group.children().length === 0)
+      group.append(target);
     cleanGroups();
   }
 
