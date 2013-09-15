@@ -1,6 +1,39 @@
 // Copyright (c) 2013 Oliver Lau <ola@ct.de>, Heise Zeitschriften Verlag
 // All rights reserved.
 
+jQuery.fn.draggit = function (el) {
+  var thisdiv = this;
+  var target = $(el);
+  var relX, relY;
+  var targetW = target.width();
+  var targetH = target.height();
+  thisdiv.bind('mousedown', function (e) {
+    var pos = $(el).offset();
+    relX = e.pageX - pos.left;
+    relY = e.pageY - pos.top;
+    $(document).bind('mousemove', function (e) {
+      target.css('position', 'absolute').css('z-index', '9999').css('cursor', 'move');
+      var maxX = $(window).width() - targetW - 10;
+      var maxY = $(window).height() - targetH - 10;
+      var left = e.pageX - relX;
+      var top = e.pageY - relY;
+      // restrict to document bounds ...
+      if (left < 0) left = 0;
+      else if (left > maxX) left = maxX;
+      if (top < 0) top = 0;
+      else if (top > maxY) top = maxY;
+      $(el).css('top', top + 'px');
+      $(el).css('left', left + 'px');
+      console.log(document.elementFromPoint(x, y));
+    });
+  });
+  $(window).bind('mouseup', function (e) {
+    $(document).unbind('mousemove');
+  });
+  return this;
+}
+
+
 var Brainstorm = (function () {
   'use strict';
 
@@ -146,6 +179,7 @@ var Brainstorm = (function () {
               + '</span>');
             idea.prepend(header);
             $('#board').append(idea);
+            header.draggit('#idea-' + data.id);
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
               keypress: function (e) {
                 if (e.keyCode === 64) {
@@ -222,7 +256,7 @@ var Brainstorm = (function () {
     var idea = $('<span class="message" id="new-idea">'
       + '<span class="header"></span>'
       + '<span class="body">'
-      + '<input type="text" id="input" placeholder="meine tolle Idee" size="30" />'
+      + '<input type="text" id="input" placeholder="meine tolle Idee" />'
       + '</span>'
       + '</span>');
     $('#board').append(idea);
