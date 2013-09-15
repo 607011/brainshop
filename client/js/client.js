@@ -12,43 +12,46 @@ String.prototype.trimmed = function () {
 }
 
 jQuery.fn.moveBetweenGroups = function (el) {
-  var handle = this, target = $(el), dx, dy, oldCSS = {}, next, prev;
+  var handle = this, target = $(el), dx, dy, placeholder = null, closest = null;
   this.bind({
-      mousedown: function (e) {
-        var pos = target.offset();
-        dx = e.pageX - pos.left;
-        dy = e.pageY - pos.top;
-        oldCSS.zIndex = target.css('z-index');
-        oldCSS.cursor = target.css('cursor');
-        oldCSS.position = target.css('position');
-        oldCSS.display = target.css('display');
-        target.css('cursor', 'move').css('z-index', 9999);
-        $(document).bind('mousemove', function (e) {
-          var maxX = $(window).width() - target.width();
-          var maxY = $(window).height() - target.height();
-          var x = (e.pageX - dx).clamp(0, maxX);
-          var y = (e.pageY - dy).clamp(0, maxY);
-          target.css('position', 'absolute').css('left', x + 'px').css('top', y + 'px');
-        });
-      },
-      mouseup: function (e) {
-        var below, group;
-        $(document).unbind('mousemove');
-        // find element below cursor
+    selectstart: function () { return false; },
+    mousedown: function (e) {
+      var pos = target.offset();
+      dx = e.pageX - pos.left;
+      dy = e.pageY - pos.top;
+      target.css('cursor', 'move').css('z-index', 9999);
+      $(document).bind('mousemove', function (e) {
+        var maxX = $(window).width() - target.width();
+        var maxY = $(window).height() - target.height();
+        var x = (e.pageX - dx).clamp(0, maxX - 8);
+        var y = (e.pageY - dy).clamp(0, maxY - 8);
+        var display = target.css('display');
         target.css('display', 'none');
-        below = $(document.elementFromPoint(e.pageX, e.pageY));
-        // which group the box is moved onto?
-        group = below.parents('.group');
-        if (group.length === 0) {
-          $.event.trigger({ type: 'newgroup', message: { target: target, css: oldCSS } });
-        }
-        else {
-          below.closest('.message').before(target);
-          $.event.trigger({ type: 'groupmoved' });
-        }
-        target.css('z-index', oldCSS.zIndex).css('cursor', oldCSS.cursor).css('position', oldCSS.position).css('top', 0).css('left', 0).css('display', oldCSS.display);
+        var below = $(document.elementFromPoint(e.pageX, e.pageY));
+        closest = below.closest('.message');
+        if (placeholder === null)
+          placeholder = $('<span class="placeholder"></span>').css('width', target.width());
+        closest.before(placeholder);
+        target.css('display', display).css('position', 'absolute').css('left', x + 'px').css('top', y + 'px');
+      });
+    },
+    mouseup: function (e) {
+      $(document).unbind('mousemove');
+      if (closest.length === 0)
+        closest = placeholder;
+      var group = closest.parents('.group');
+      if (group.length === 0) {
+        console.log('new group');
+        $.event.trigger({ type: 'newgroup', message: target });
       }
-    });
+      else {
+        placeholder.replaceWith(target);
+        placeholder = null;
+        $.event.trigger({ type: 'movebetweengroups' });
+      }
+      target.removeAttr('style');
+    }
+  });
   return this;
 }
 
@@ -59,7 +62,7 @@ var Brainstorm = (function () {
   var URL = 'ws://' + HOST + ':' + PORT + '/';
   var socket;
   var connectionEstablished = false;
-  var RETRY_SECS = 11;
+  var RETRY_SECS = 5+1;
   var retry_secs;
   var reconnectTimer = null;
   var user;
@@ -194,10 +197,10 @@ var Brainstorm = (function () {
               + '<span class="user" id="user-' + data.id + '">' + data.user + '</span>'
               + '</span>'
               + '</span>');
-            msgbox.prepend(header);
             group = $('#group-' + data.group);
             if (group.length === 0)
               group = newGroup(data.group);
+            msgbox.prepend(header).attr('data-group', data.group);
             group.append(msgbox);
             $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header);
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
@@ -239,7 +242,6 @@ var Brainstorm = (function () {
             + '<span class="body"><input type="text" id="new-board" placeholder="..." size="7" /></span>'
             + '</span>');
           $('#available-boards').append(board);
-          // $('.board.active').prependTo($('#available-boards'));
           $('#new-board').bind('keyup', function (e) {
             if (e.target.value.length > 20) {
               e.preventDefault();
@@ -306,12 +308,10 @@ var Brainstorm = (function () {
   }
 
   function newGroupEvent(e) {
-    var options = e.message;
+    var target = e.message;
     var group = newGroup(++lastGroup);
-    Object.keys(options).forEach(function (i, item) {
-      options.target.css(item, options.css[item]);
-    });
-    group.append(options.target);
+    currentGroup = lastGroup;
+    group.append(target);
     cleanGroups();
   }
 
@@ -321,12 +321,15 @@ var Brainstorm = (function () {
       boardName = localStorage.getItem('lastBoardName') || 'Brainstorm';
       if (user === '') {
         $('#uid').attr('class', 'pulse');
-        alert('Du bist das erste Mal hier. Zum Mitmachen trage bitte dein Kürzel in das blinkende Feld ein.');
+        alert('Du bist zum ersten Mal hier. Trage bitte dein Kürzel in das blinkende Feld ein.');
       }
       openSocket();
       $(window).bind({
         newgroup: newGroupEvent,
-        groupmoved: function () { cleanGroups(); }
+        movebetweengroups: function () {
+          cleanGroups();
+          $('#input').trigger('focus');
+        }
       });
       $('#uid').val(user).bind({
         keypress: function (e) {
@@ -341,7 +344,6 @@ var Brainstorm = (function () {
           }
         }
       });
-      document.onselectstart = function () { return false; };
     }
   };
 

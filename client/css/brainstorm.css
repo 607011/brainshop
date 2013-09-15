@@ -43,13 +43,21 @@ a {
   background-color: #fc0 !important;
 }
 
-.message {
-  position: relative;
+.placeholder, .message {
   vertical-align: top;
   display: inline-block;
-  background-color: #d3cf2e;
   margin: 1px;
+  min-width: 1px;
   min-height: 66px;
+  position: relative;
+}
+
+.placeholder {
+  background-color: #ddd;
+}
+
+.message {
+  background-color: #d3cf2e;
 }
 
   .message .header {
