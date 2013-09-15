@@ -2,6 +2,7 @@
 // All rights reserved.
 
 var fs = require('fs');
+var sqlite = require('sqlite3');
 
 var boards = {};
 
@@ -23,6 +24,7 @@ Board.loadAll = function () {
     }
   });
 }
+Board.all = function () { return boards; }
 Board.informAllUsers = function () {
   var boardNames = Object.keys(boards);
   boardNames.each(function (i, boardName) {
@@ -107,5 +109,3 @@ Board.prototype.sendToAllUsers = function (message) {
 }
 
 exports.Board = Board;
-exports.boards = boards;
-

@@ -1,42 +1,59 @@
 // Copyright (c) 2013 Oliver Lau <ola@ct.de>, Heise Zeitschriften Verlag
 // All rights reserved.
 
-jQuery.fn.draggit = function (el) {
-  var thisdiv = this;
-  var target = $(el);
-  var relX, relY;
-  var targetW = target.width();
-  var targetH = target.height();
-  thisdiv.bind('mousedown', function (e) {
-    var pos = $(el).offset();
-    relX = e.pageX - pos.left;
-    relY = e.pageY - pos.top;
-    $(document).bind('mousemove', function (e) {
-      target.css('position', 'absolute').css('z-index', '9999').css('cursor', 'move');
-      var maxX = $(window).width() - targetW - 10;
-      var maxY = $(window).height() - targetH - 10;
-      var left = e.pageX - relX;
-      var top = e.pageY - relY;
-      // restrict to document bounds ...
-      if (left < 0) left = 0;
-      else if (left > maxX) left = maxX;
-      if (top < 0) top = 0;
-      else if (top > maxY) top = maxY;
-      $(el).css('top', top + 'px');
-      $(el).css('left', left + 'px');
-      console.log(document.elementFromPoint(x, y));
+"use strict";
+
+Number.prototype.clamp = function (a, b) {
+  return (this < a)? a : ((this > b)? b : this);
+}
+
+String.prototype.trimmed = function () {
+  return this.replace(/^\s+/, '').replace(/\s+$/, '');
+}
+
+jQuery.fn.moveBetweenGroups = function (el) {
+  var handle = this, target = $(el), dx, dy, oldCSS = {}, next, prev;
+  this.bind({
+      mousedown: function (e) {
+        var pos = target.offset();
+        dx = e.pageX - pos.left;
+        dy = e.pageY - pos.top;
+        oldCSS.zIndex = target.css('z-index');
+        oldCSS.cursor = target.css('cursor');
+        oldCSS.position = target.css('position');
+        oldCSS.display = target.css('display');
+        target.css('cursor', 'move').css('z-index', 9999);
+        $(document).bind('mousemove', function (e) {
+          var maxX = $(window).width() - target.width();
+          var maxY = $(window).height() - target.height();
+          var x = (e.pageX - dx).clamp(0, maxX);
+          var y = (e.pageY - dy).clamp(0, maxY);
+          target.css('position', 'absolute').css('left', x + 'px').css('top', y + 'px');
+        });
+      },
+      mouseup: function (e) {
+        var below, group;
+        $(document).unbind('mousemove');
+        // find element below cursor
+        target.css('display', 'none');
+        below = $(document.elementFromPoint(e.pageX, e.pageY));
+        // which group the box is moved onto?
+        group = below.parents('.group');
+        if (group.length === 0) {
+          $.event.trigger({ type: 'newgroup', message: { target: target, css: oldCSS } });
+        }
+        else {
+          below.closest('.message').before(target);
+          $.event.trigger({ type: 'groupmoved' });
+        }
+        target.css('z-index', oldCSS.zIndex).css('cursor', oldCSS.cursor).css('position', oldCSS.position).css('top', 0).css('left', 0).css('display', oldCSS.display);
+      }
     });
-  });
-  $(window).bind('mouseup', function (e) {
-    $(document).unbind('mousemove');
-  });
   return this;
 }
 
 
 var Brainstorm = (function () {
-  'use strict';
-
   var HOST = document.location.hostname;
   var PORT = 8889;
   var URL = 'ws://' + HOST + ':' + PORT + '/';
@@ -47,10 +64,8 @@ var Brainstorm = (function () {
   var reconnectTimer = null;
   var user;
   var boardName;
-
-  String.prototype.trimmed = function () {
-    return this.replace(/^\s+/, '').replace(/\s+$/, '');
-  }
+  var currentGroup = 0;
+  var lastGroup = 0;
 
   function send(message) {
     if (typeof message.user === 'undefined')
@@ -76,6 +91,7 @@ var Brainstorm = (function () {
     $('#dislikes-' + data.id).text(data.dislikes.length);
     $('#idea-text-' + data.id).html(data.text);
     $('#idea-' + data.id).addClass('blink-once');
+    // TODO: change group if necessary
     setTimeout(function () {
       $('#idea-' + data.id).removeClass('blink-once');
     }, 300);
@@ -140,7 +156,7 @@ var Brainstorm = (function () {
     };
 
     socket.onmessage = function (e) {
-      var data = JSON.parse(e.data), i, ok, board, name, header;
+      var data = JSON.parse(e.data), i, msgbox, ok, board, name, header, group;
       switch (data.type) {
         case 'idea':
           if ($('#idea-' + data.id).length > 0) {
@@ -149,7 +165,8 @@ var Brainstorm = (function () {
           else {
             data.likes = data.likes || [];
             data.dislikes = data.dislikes || [];
-            var header = $('<span class="header"></span>')
+            data.group = data.group || 0;
+            header = $('<span class="header"></span>').append($('<span class="menu"></span>')
               .append($('<span>' + data.likes.length + '</span>').attr('id', 'likes-' + data.id))
               .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
                 .click(function (e) {
@@ -169,41 +186,43 @@ var Brainstorm = (function () {
                     send({ type: 'command', board: boardName, command: 'delete', id: data.id });
                 }
               )
-            );
-            var idea = $('<span class="message" id="idea-' + data.id + '">'
+            ));
+            msgbox = $('<span class="message" id="idea-' + data.id + '">'
               + '<span class="body"><span class="idea" id="idea-text-' + data.id + '">' + data.text + '</span></span>'
               + '<span class="footer">'
               + '<span class="date">' + data.date + '</span>'
               + '<span class="user" id="user-' + data.id + '">' + data.user + '</span>'
               + '</span>'
               + '</span>');
-            idea.prepend(header);
-            $('#board').append(idea);
-            header.draggit('#idea-' + data.id);
+            msgbox.prepend(header);
+            group = $('#group-' + data.group);
+            if (group.length === 0)
+              group = newGroup(data.group);
+            group.append(msgbox);
+            $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header);
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
               keypress: function (e) {
-                if (e.keyCode === 64) {
-                  if (!e.shiftKey) {
-                    sendIdea(data.id);
-                    e.preventDefault();
-                  }
+                if (e.keyCode === 13 && !e.shiftKey) {
+                  sendIdea(data.id);
+                  e.preventDefault();
                 }
               }
             });
-            $('#new-idea').appendTo('#board');
+            $('#new-idea').appendTo($('#group-' + data.group)); // moves #new-idea to group
+            currentGroup = data.group;
           }
           break;
         case 'board-list':
           $('#available-boards').empty();
-          for (i in data.boards) {
+          Object.keys(data.boards).forEach(function (i, name) {
             name = data.boards[i];
-            header = $('<span class="header"></span>')
-              .append($('<span class="icon trash" title="in den Müll"></span>')
-                .click(function (e) {
-                  alert('nicht implementiert');
-                  e.preventDefault();
-                }
-              ));
+            header = $('<span class="header"></span>');
+            //header.append($('<span class="icon trash" title="in den Müll"></span>')
+            //    .click(function (e) {
+            //      // TODO
+            //      e.preventDefault();
+            //    }
+            //  ));
             board = $('<span class="board" title="' + name + '">'
               + '<span class="body">' + name + '</span>'
               + '</span>')
@@ -214,7 +233,7 @@ var Brainstorm = (function () {
               board.addClass('active');
             board.prepend(header);
             $('#available-boards').append(board);
-          }
+          });
           board = $('<span class="board">'
             + '<span class="header">neues Board</span>'
             + '<span class="body"><input type="text" id="new-board" placeholder="..." size="7" /></span>'
@@ -222,16 +241,20 @@ var Brainstorm = (function () {
           $('#available-boards').append(board);
           // $('.board.active').prependTo($('#available-boards'));
           $('#new-board').bind('keyup', function (e) {
-            if (e.keyCode === 13) {
-              if (e.target.value != '') {
-                setBoard(e.target.value);
-              }
-            }
-            if (e.target.value.length > 20)
+            if (e.target.value.length > 20) {
               e.preventDefault();
+              return;
+            }
+            if (e.keyCode === 13 && e.target.value != '')
+                setBoard(e.target.value);
           })
           break;
         case 'finished':
+          group = $('#group-' + currentGroup);
+          if (group.length === 0) {
+            group = newGroup(currentGroup);
+            $('#board').append(group);
+          }
           newIdeaBox();
           break;
         case 'command':
@@ -259,13 +282,37 @@ var Brainstorm = (function () {
       + '<input type="text" id="input" placeholder="meine tolle Idee" />'
       + '</span>'
       + '</span>');
-    $('#board').append(idea);
+    $('#group-' + currentGroup).append(idea);
     $('#input').bind('keyup', function (e) {
       if (e.keyCode === 13)
         sendIdea();
       if (e.target.value.length > 100)
         e.preventDefault();
     }).trigger('focus');
+  }
+
+  function cleanGroups() {
+    $('.group').each(function (i, g) {
+      var group = $(g);
+      if (group.children().length === 0)
+        group.remove();
+    });
+  }
+
+  function newGroup(gID) {
+    var group = $('<span id="group-' + gID + '" class="group"></span>');
+    $('#board').append(group);
+    return group;
+  }
+
+  function newGroupEvent(e) {
+    var options = e.message;
+    var group = newGroup(++lastGroup);
+    Object.keys(options).forEach(function (i, item) {
+      options.target.css(item, options.css[item]);
+    });
+    group.append(options.target);
+    cleanGroups();
   }
 
   return {
@@ -277,6 +324,10 @@ var Brainstorm = (function () {
         alert('Du bist das erste Mal hier. Zum Mitmachen trage bitte dein Kürzel in das blinkende Feld ein.');
       }
       openSocket();
+      $(window).bind({
+        newgroup: newGroupEvent,
+        groupmoved: function () { cleanGroups(); }
+      });
       $('#uid').val(user).bind({
         keypress: function (e) {
           if (e.target.value.length > 4)
@@ -290,6 +341,7 @@ var Brainstorm = (function () {
           }
         }
       });
+      document.onselectstart = function () { return false; };
     }
   };
 

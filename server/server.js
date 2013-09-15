@@ -2,13 +2,13 @@
 // All rights reserved.
 
 var fs = require('fs');
-var BB = require('./board');
-var WebSocketServer = require('ws').Server;
-var http = require('http');
-var mime = require('mime');
-// var https = require('https');
-var url = require('url');
 var wss;
+var WebSocketServer = require('ws').Server;
+var mime = require('mime');
+var url = require('url');
+var http = require('http');
+// var https = require('https');
+var Board = require('./board').Board;
 
 function pad0(x) {
   return ('00' + x.toFixed()).slice(-2);
@@ -63,7 +63,7 @@ function main() {
   //var certificate = fs.readFileSync('certificate.pem').toString();
   //https.createServer({ key: privateKey, cert: certificate }, httpServer).listen(8887);
 
-  BB.Board.loadAll();
+  Board.loadAll();
 
   wss = new WebSocketServer({ port: 8889 });
   wss.on('connection', function (ws) {
@@ -74,7 +74,7 @@ function main() {
         case 'idea':
           now = new Date;
           data.date = now.getFullYear() + '-' + pad0(now.getMonth() + 1) + '-' + pad0(now.getDate()) + ' ' + pad0(now.getHours()) + ':' + pad0(now.getMinutes());
-          board = BB.boards[data.board];
+          board = Board.all()[data.board];
           if (typeof data.id === 'undefined') {
             // new entry
             data.id = board.incId();
@@ -100,14 +100,14 @@ function main() {
             case 'init':
               if (typeof data.board === 'undefined' || data.board === '')
                 return;
-              board = BB.boards[data.board];
+              board = Board.all()[data.board];
               if (typeof board === 'undefined') {
                 board = new Board(data.board);
-                BB.boards[data.board] = board;
-                BB.Board.informAllUsers();
+                Board.all()[data.board] = board;
+                Board.informAllUsers();
               }
               else {
-                ws.send(JSON.stringify({ type: 'board-list', boards: Object.keys(BB.boards) }));
+                ws.send(JSON.stringify({ type: 'board-list', boards: Object.keys(Board.all()) }));
               }
               board.addUser(ws);
               for (i = 0; i < board.ideas.length; ++i) {
@@ -118,13 +118,13 @@ function main() {
               ws.send(JSON.stringify({ type: 'finished'}));
               break;
             case 'delete':
-              board = BB.boards[data.board];
+              board = Board.all()[data.board];
               board.sendToAllUsers({ type: 'command', command: 'delete', board: data.board, id: data.id });
               board.removeIdea(data.id);
               board.save();
               break;
             case 'like':
-              board = BB.boards[data.board];
+              board = Board.all()[data.board];
               idea = board.getIdea(data.id);
               if (idea.dislikes.contains(data.user))
                 idea.dislikes.remove(data.user);
@@ -134,7 +134,7 @@ function main() {
               board.save();
               break;
             case 'dislike':
-              board = BB.boards[data.board];
+              board = Board.all()[data.board];
               idea = board.getIdea(data.id);
               if (idea.likes.contains(data.user))
                 idea.likes.remove(data.user);
