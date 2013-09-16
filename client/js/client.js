@@ -56,7 +56,7 @@ jQuery.fn.moveBetweenGroups = function (el) {
       var groupId = placeholder.parents('.group').attr('data-id');
       target.attr('data-group', groupId);
       placeholder.replaceWith(target);
-      $.event.trigger({ type: 'movebetweengroups' });
+      $.event.trigger({ type: 'movebetweengroups', message: { id: parseInt(target.attr('data-id')), group: groupId } });
       placeholder = null;
     }
   });
@@ -85,24 +85,32 @@ var Brainstorm = (function () {
   }
 
   function sendIdea(id) {
+    var msg;
     if (user === '')
       return;
     if (typeof id === 'undefined') {
-      send({ board: boardName, type: 'idea', text: $('#input').val().trimmed(), user: user });
+      msg = { board: boardName, type: 'idea', group: 0, text: $('#input').val().trimmed(), user: user };
+      send(msg);
       $('#input').val('');
     }
     else {
-      send({ board: boardName, type: 'idea', id: id, text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() });
+      msg = { board: boardName, type: 'idea', seq: -1, id: id, group: parseInt($('#idea-' + id).attr('data-group')), text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() };
+      console.log(msg);
+      send(msg);
     }
     $('#new-idea').remove();
   }
 
   function updateIdea(data) {
-    $('#likes-' + data.id).text(data.likes.length);
-    $('#dislikes-' + data.id).text(data.dislikes.length);
-    $('#idea-text-' + data.id).html(data.text);
-    $('#idea-' + data.id).addClass('blink-once');
-    // TODO: change group if necessary
+    var box = $('#idea-' + data.id);
+    box.find('#likes-' + data.id).text(data.likes.length);
+    box.find('#dislikes-' + data.id).text(data.dislikes.length);
+    box.find('#idea-text-' + data.id).html(data.text);
+    box.addClass('blink-once');
+    if (data.group !== parseInt(box.attr('data-group'))) {
+      box.appendTo($('#group-' + data.group));
+      cleanGroups();
+    }
     setTimeout(function () {
       $('#idea-' + data.id).removeClass('blink-once');
     }, 300);
@@ -335,7 +343,9 @@ var Brainstorm = (function () {
       openSocket();
       $(window).bind({
         newgroup: newGroupEvent,
-        movebetweengroups: function () {
+        movebetweengroups: function (e) {
+          var ideaId = e.message.id;
+          sendIdea(ideaId);
           cleanGroups();
           $('#input').trigger('focus');
         }

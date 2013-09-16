@@ -63,6 +63,7 @@ function main() {
   //var certificate = fs.readFileSync('certificate.pem').toString();
   //https.createServer({ key: privateKey, cert: certificate }, httpServer).listen(8887);
 
+  Board.initDatabase();
   Board.loadAll();
 
   wss = new WebSocketServer({ port: 8889 });
@@ -87,7 +88,9 @@ function main() {
           else {
             // update entry
             idea = board.getIdea(data.id);
+            idea.group = data.group;
             idea.text = data.text;
+            idea.seq = data.seq;
             board.setIdea(idea);
             board.sendToAllUsers(idea);
             console.log('update entry: ', idea);
@@ -100,7 +103,7 @@ function main() {
             case 'init':
               if (typeof data.board === 'undefined' || data.board === '')
                 return;
-              board = Board.all()[data.board];
+              board = Board.all(data.board);
               if (typeof board === 'undefined') {
                 board = new Board(data.board);
                 Board.all()[data.board] = board;
@@ -118,13 +121,13 @@ function main() {
               ws.send(JSON.stringify({ type: 'finished'}));
               break;
             case 'delete':
-              board = Board.all()[data.board];
+              board = Board.all(data.board);
               board.sendToAllUsers({ type: 'command', command: 'delete', board: data.board, id: data.id });
               board.removeIdea(data.id);
               board.save();
               break;
             case 'like':
-              board = Board.all()[data.board];
+              board = Board.all(data.board);
               idea = board.getIdea(data.id);
               if (idea.dislikes.contains(data.user))
                 idea.dislikes.remove(data.user);
@@ -134,7 +137,7 @@ function main() {
               board.save();
               break;
             case 'dislike':
-              board = Board.all()[data.board];
+              board = Board.all(data.board);
               idea = board.getIdea(data.id);
               if (idea.likes.contains(data.user))
                 idea.likes.remove(data.user);

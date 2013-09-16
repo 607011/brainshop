@@ -2,7 +2,9 @@
 // All rights reserved.
 
 var fs = require('fs');
-var sqlite = require('sqlite3');
+var sqlite3 = require('sqlite3');
+var dbfile = 'brainshop-pro.sqlite';
+var db = new sqlite3.Database(dbfile);
 
 var boards = {};
 
@@ -15,6 +17,22 @@ var Board = function (name) {
   if (typeof name === 'string')
     this.load(name);
 }
+Board.initDatabase = function () {
+  db.serialize(function () {
+    if (!fs.existsSync(dbfile)) {
+      db.run('CREATE TABLE brainshoppro (' +
+        'id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,' +
+        'board TEXT,' +
+        'entry TEXT,' +
+        'seq INTEGER,' +
+        'group INTEGER,' +
+        'created DATETIME,' +
+        'user TEXT' +
+        ')'
+        );
+    }
+  });
+}
 Board.loadAll = function () {
   fs.readdirSync('boards').each(function (i, boardFileName) {
     var m = boardFileName.match(/(.+)\.json$/);
@@ -24,7 +42,9 @@ Board.loadAll = function () {
     }
   });
 }
-Board.all = function () { return boards; }
+Board.all = function (board) {
+  return (typeof board === 'string')? boards[board] : boards;
+}
 Board.informAllUsers = function () {
   var boardNames = Object.keys(boards);
   boardNames.each(function (i, boardName) {
@@ -61,6 +81,8 @@ Board.prototype.getIdea = function (id) {
         idea.likes = [];
       if (typeof idea.dislikes === 'undefined')
         idea.dislikes = [];
+      if (typeof idea.group === 'undefined')
+        idea.group = 0;
       return idea;
     }
 }
