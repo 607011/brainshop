@@ -51,13 +51,13 @@ jQuery.fn.moveBetweenGroups = function (el) {
     mouseup: function (e) {
       $(document).unbind('mousemove').unbind('selectstart');
       target.removeAttr('style');
-      if (placeholder === null)
-        return;
-      var groupId = placeholder.parents('.group').attr('data-id');
-      target.attr('data-group', groupId);
-      placeholder.replaceWith(target);
-      $.event.trigger({ type: 'movebetweengroups' });
-      placeholder = null;
+      if (placeholder !== null) {
+        var groupId = placeholder.parents('.group').attr('data-id');
+        target.attr('data-group', groupId);
+        placeholder.replaceWith(target);
+        $.event.trigger({ type: 'ideamoved', message: { id: parseInt(target.attr('data-id')), group: groupId } });
+        placeholder = null;
+      }
     }
   });
   return this;
@@ -81,28 +81,41 @@ var Brainstorm = (function () {
   function send(message) {
     if (typeof message.user === 'undefined')
       message.user = user;
+    console.log('send() ->', message);
     socket.send(JSON.stringify(message));
   }
 
-  function sendIdea(id) {
+  var mix = function (a, b) {
+    if (typeof a === 'object' && typeof b === 'object')
+      Object.keys(b).forEach(function (i) { a[i] = b[i]; });
+    return a;
+  }
+
+  function sendIdea(id, optional) {
+    var msg;
     if (user === '')
       return;
     if (typeof id === 'undefined') {
-      send({ board: boardName, type: 'idea', text: $('#input').val().trimmed(), user: user });
+      msg = mix({ board: boardName, type: 'idea', group: 0, text: $('#input').val().trimmed(), user: user }, optional);
+      send(msg);
       $('#input').val('');
     }
     else {
-      send({ board: boardName, type: 'idea', id: id, text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() });
+      msg = mix({ board: boardName, type: 'idea', id: id, group: parseInt($('#idea-' + id).attr('data-group')), text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() }, optional);
+      send(msg);
     }
     $('#new-idea').remove();
   }
 
   function updateIdea(data) {
-    $('#likes-' + data.id).text(data.likes.length);
-    $('#dislikes-' + data.id).text(data.dislikes.length);
-    $('#idea-text-' + data.id).html(data.text);
-    $('#idea-' + data.id).addClass('blink-once');
-    // TODO: change group if necessary
+    var box = $('#idea-' + data.id);
+    console.log('updateIdea()', data);
+    box.find('#likes-' + data.id).text((data.likes || []).length);
+    box.find('#dislikes-' + data.id).text((data.dislikes || []).length);
+    box.find('#idea-text-' + data.id).html(data.text);
+    if (typeof data.next === 'number')
+      box.insertBefore($('#idea-' + data.next));
+    box.addClass('blink-once');
     setTimeout(function () {
       $('#idea-' + data.id).removeClass('blink-once');
     }, 300);
@@ -167,21 +180,24 @@ var Brainstorm = (function () {
     };
 
     socket.onmessage = function (e) {
-      var data = JSON.parse(e.data), i, msgbox, ok, board, name, header, group;
+      var data = JSON.parse(e.data), i, idea, ok, board, name, header, group;
       switch (data.type) {
         case 'idea':
           if ($('#idea-' + data.id).length > 0) {
             updateIdea(data);
+            if (data.last)
+              newIdeaBox();
           }
           else {
             data.likes = data.likes || [];
             data.dislikes = data.dislikes || [];
             data.group = data.group || 0;
+            console.log(data);
             header = $('<span class="header"></span>').append($('<span class="menu"></span>')
               .append($('<span>' + data.likes.length + '</span>').attr('id', 'likes-' + data.id))
               .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
                 .click(function (e) {
-                  send({ type: 'command', command: 'like', board: boardName, id: data.id });
+                  send({ type: 'command', command: 'like', board: boardName, id: data.id, group: data.group });
                 })
               )
               .append($('<span>' + data.dislikes.length + '</span>').attr('id', 'dislikes-' + data.id))
@@ -194,11 +210,11 @@ var Brainstorm = (function () {
                 .click(function (e) {
                   ok = confirm('Eintrag "' + data.text + '" (#' + data.id + ') wirklich löschen?');
                   if (ok)
-                    send({ type: 'command', board: boardName, command: 'delete', id: data.id });
+                    send({ type: 'command', board: boardName, command: 'delete', id: data.id, group: data.group });
                 }
               )
             ));
-            msgbox = $('<span class="message" id="idea-' + data.id + '">'
+            idea = $('<span class="message" id="idea-' + data.id + '">'
               + '<span class="body"><span class="idea" id="idea-text-' + data.id + '">' + data.text + '</span></span>'
               + '<span class="footer">'
               + '<span class="date">' + data.date + '</span>'
@@ -208,9 +224,14 @@ var Brainstorm = (function () {
             group = $('#group-' + data.group);
             if (group.length === 0)
               group = newGroup(data.group);
-            msgbox.prepend(header).attr('data-group', data.group).attr('data-id', data.id);
-            group.append(msgbox);
-            $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header);
+            idea.prepend(header).attr('data-group', data.group).attr('data-id', data.id);
+            if (typeof data.next === 'undefined' || data.next < 0) {
+              group.append(idea);
+            }
+            else {
+              $('#idea-' + data.next).before(idea);
+            }
+            $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header).html('[' + data.id + ']');
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
               keypress: function (e) {
                 if (e.keyCode === 13 && !e.shiftKey) {
@@ -220,13 +241,21 @@ var Brainstorm = (function () {
               }
             });
             $('#new-idea').appendTo($('#group-' + data.group)); // moves #new-idea to group
-            currentGroup = data.group;
+            if (data.last) {
+              currentGroup = data.group;
+              group = $('#group-' + currentGroup);
+              if (group.length === 0) {
+                group = newGroup(currentGroup);
+                $('#board').append(group);
+              }
+              newIdeaBox();
+            }
           }
           break;
         case 'board-list':
           $('#available-boards').empty();
-          Object.keys(data.boards).forEach(function (i, name) {
-            name = data.boards[i];
+          Object.keys(data.boards).forEach(function (i) {
+            var name = data.boards[i];
             header = $('<span class="header"></span>');
             //header.append($('<span class="icon trash" title="in den Müll"></span>')
             //    .click(function (e) {
@@ -259,14 +288,6 @@ var Brainstorm = (function () {
                 setBoard(e.target.value);
           })
           break;
-        case 'finished':
-          group = $('#group-' + currentGroup);
-          if (group.length === 0) {
-            group = newGroup(currentGroup);
-            $('#board').append(group);
-          }
-          newIdeaBox();
-          break;
         case 'command':
           switch (data.command) {
             case 'delete':
@@ -294,8 +315,10 @@ var Brainstorm = (function () {
       + '</span>');
     $('#group-' + currentGroup).append(idea);
     $('#input').bind('keyup', function (e) {
-      if (e.keyCode === 13)
+      if (e.keyCode === 13 && e.target.value.length > 0) {
         sendIdea();
+        e.preventDefault();
+      }
       if (e.target.value.length > 100)
         e.preventDefault();
     }).trigger('focus');
@@ -335,7 +358,15 @@ var Brainstorm = (function () {
       openSocket();
       $(window).bind({
         newgroup: newGroupEvent,
-        movebetweengroups: function () {
+        ideamoved: function (e) { // TODO
+          var ideaId = e.message.id;
+          var thisIdea = $('#idea-' + ideaId);
+          var nextIdea = thisIdea.next();
+          var nextIdeaId = parseInt(nextIdea.attr('data-id')) || -1;
+          sendIdea(ideaId, { next: nextIdeaId });
+          var nextIdea = thisIdea.next('[id^="idea-]');
+          if (nextIdea.length > 0)
+            sendIdea(parseInt(nextIdea.attr('data-id')), { next: ideaId });
           cleanGroups();
           $('#input').trigger('focus');
         }

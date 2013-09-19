@@ -7,7 +7,6 @@ var WebSocketServer = require('ws').Server;
 var mime = require('mime');
 var url = require('url');
 var http = require('http');
-// var https = require('https');
 var Board = require('./board').Board;
 
 function pad0(x) {
@@ -32,44 +31,38 @@ Array.prototype.add = function (val) {
 };
 
 function main() {
-  function httpServer(req, res) {
+  http.createServer(function httpServer(req, res) {
     var pathName = url.parse(req.url).pathname;
-    if (pathName === '/all') {
-      res.writeHead(200, { 'Content-type': 'text/json' });
-      // TODO: send JSON file with board contents
-      res.write();
-      res.end();
-    }
-    else {
-      if (pathName === '/')
-        pathName = '/index.html';
-      var file = '../client' + pathName;
-      fs.exists(file, function (exists) {
-        if (exists) {
-          res.writeHead(200, { 'Content-type': mime.lookup(file) });
-          res.write(fs.readFileSync(file)); 
-          res.end();
-        }
-        else {
-          res.writeHead(404);
-          res.end();
-        }
-      });
-    }
-  }
+    if (pathName === '/')
+      pathName = '/index.html';
+    var file = '../client' + pathName;
+    fs.exists(file, function (exists) {
+      if (exists) {
+        res.writeHead(200, { 'Content-type': mime.lookup(file) });
+        res.write(fs.readFileSync(file));
+        res.end();
+      }
+      else {
+        res.writeHead(404);
+        res.end();
+      }
+    });
+  }).listen(8888);
 
-  http.createServer(httpServer).listen(8888);
-  //var privateKey = fs.readFileSync('privatekey.pem').toString();
-  //var certificate = fs.readFileSync('certificate.pem').toString();
-  //https.createServer({ key: privateKey, cert: certificate }, httpServer).listen(8887);
-
+  Board.initDatabase();
   Board.loadAll();
 
   wss = new WebSocketServer({ port: 8889 });
   wss.on('connection', function (ws) {
+    function sendToClient(msg) {
+      ws.send(JSON.stringify(msg));
+    }
+    ws.on('close', function (message) {
+      Board.removeUser(ws);
+    });
     ws.on('message', function (message) {
       var data = JSON.parse(message || '{}'), idea, ideas, now, i, board;
-      console.log('message received: ', message);
+      console.log('message received -> ', data);
       switch (data.type) {
         case 'idea':
           now = new Date;
@@ -81,50 +74,57 @@ function main() {
             data.likes = [];
             data.dislikes = [];
             board.addIdea(data);
+            data.last = true;
             board.sendToAllUsers(data);
-            console.log('new entry: ', data);
+            idea = data;
           }
           else {
             // update entry
             idea = board.getIdea(data.id);
+            idea.group = data.group;
             idea.text = data.text;
-            board.setIdea(idea);
+            idea.next = data.next;
+            board.moveIdea(idea);
+            idea.last = true;
             board.sendToAllUsers(idea);
-            console.log('update entry: ', idea);
           }
+          delete idea.next;
+          delete idea.last;
           board.save();
-          ws.send(JSON.stringify({ type: 'finished' }));
           break;
         case 'command':
           switch (data.command) {
             case 'init':
               if (typeof data.board === 'undefined' || data.board === '')
                 return;
-              board = Board.all()[data.board];
+              board = Board.all(data.board);
               if (typeof board === 'undefined') {
                 board = new Board(data.board);
-                Board.all()[data.board] = board;
+                Board.set(data.board, board);
                 Board.informAllUsers();
               }
               else {
-                ws.send(JSON.stringify({ type: 'board-list', boards: Object.keys(Board.all()) }));
+                sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
               }
               board.addUser(ws);
-              for (i = 0; i < board.ideas.length; ++i) {
-                idea = board.ideas[i];
-                console.log('command.init -> sending ', idea);
-                ws.send(JSON.stringify(idea));
-              }
-              ws.send(JSON.stringify({ type: 'finished'}));
+              board.groups.each(function (i, group) {
+                var groupId = i;
+                group.ideas.each(function (j, idea) {
+                  idea.last = (j === group.ideas.length - 1) && (i === board.groups.length - 1);
+                  idea.group = groupId;
+                  sendToClient(idea);
+                  delete idea.last;
+                })
+              });
               break;
             case 'delete':
-              board = Board.all()[data.board];
+              board = Board.all(data.board);
               board.sendToAllUsers({ type: 'command', command: 'delete', board: data.board, id: data.id });
               board.removeIdea(data.id);
               board.save();
               break;
             case 'like':
-              board = Board.all()[data.board];
+              board = Board.all(data.board);
               idea = board.getIdea(data.id);
               if (idea.dislikes.contains(data.user))
                 idea.dislikes.remove(data.user);
@@ -134,7 +134,7 @@ function main() {
               board.save();
               break;
             case 'dislike':
-              board = Board.all()[data.board];
+              board = Board.all(data.board);
               idea = board.getIdea(data.id);
               if (idea.likes.contains(data.user))
                 idea.likes.remove(data.user);
