@@ -1,3 +1,6 @@
+# Fehler
+
+ * Board# nicht als Idea-Attribut speichern, da Board# bereits Index der Idea-Liste
 
 
 # Schlüssel für HTTPS generieren

@@ -14,8 +14,16 @@ function pad0(x) {
 }
 
 Array.prototype.each = function (callback) {
-  for (var i = 0; i < this.length; ++i)
+  var i, N = this.length;
+  for (i = 0; i < N; ++i)
     callback(i, this[i]);
+}
+Object.prototype.each = function (callback) {
+  var i, p, props = Object.getOwnPropertyNames(this);
+  for (i = 0; i < props.length; ++i) {
+    p = props[i];
+    callback(p, this[p]);
+  }
 }
 Array.prototype.contains = function (val) {
   return this.indexOf(val) >= 0;
@@ -49,7 +57,7 @@ function main() {
     });
   }).listen(8888);
 
-  Board.initDatabase();
+  // Board.initDatabase();
   Board.loadAll();
 
   wss = new WebSocketServer({ port: 8889 });
@@ -61,7 +69,7 @@ function main() {
       Board.removeUser(ws);
     });
     ws.on('message', function (message) {
-      var data = JSON.parse(message || '{}'), idea, ideas, now, i, board;
+      var data = JSON.parse(message || '{}'), idea, ideas, now, i, board, lastGroupId;
       console.log('message received -> ', data);
       switch (data.type) {
         case 'idea':
@@ -107,14 +115,17 @@ function main() {
                 sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
               }
               board.addUser(ws);
-              board.groups.each(function (i, group) {
-                var groupId = i;
-                group.ideas.each(function (j, idea) {
-                  idea.last = (j === group.ideas.length - 1) && (i === board.groups.length - 1);
-                  idea.group = groupId;
-                  sendToClient(idea);
-                  delete idea.last;
-                })
+              lastGroupId = Object.keys(board.groups).slice(-1);
+              console.log('lastGroupId =', lastGroupId);
+              board.groups.each(function (groupId, group) {
+                if (typeof group === 'object') {
+                  group.ideas.each(function (j, idea) {
+                    idea.last = (j === group.ideas.length - 1) && (groupId == lastGroupId);
+                    idea.group = groupId;
+                    sendToClient(idea);
+                    delete idea.last;
+                  })
+                }
               });
               break;
             case 'delete':

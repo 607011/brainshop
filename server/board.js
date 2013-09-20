@@ -2,9 +2,9 @@
 // All rights reserved.
 
 var fs = require('fs');
-var sqlite3 = require('sqlite3');
-var dbfile = 'brainshop-pro.sqlite';
-var db = new sqlite3.Database(dbfile);
+//var sqlite3 = require('sqlite3');
+//var dbfile = 'brainshop-pro.sqlite';
+//var db = new sqlite3.Database(dbfile);
 
 var boards = {};
 
@@ -24,11 +24,9 @@ var Idea = function (data) {
 
 var Group = function (ideas) {
   this.ideas = ideas || [];
-  console.log('Group() -> ', ideas);
 }
 Group.prototype.addIdea = function (idea) {
-  console.log('Group.addIdea() -> ', idea);
-  if (typeof idea.next === 'number')
+  if (typeof idea.next === 'number' && idea.next >= 0)
     this.ideas.insertBefore(this.indexOf(idea.next), idea);
   else
     this.ideas.push(idea);
@@ -58,18 +56,27 @@ Group.prototype.indexOf = function (id) {
       return i;
   return -1;
 }
+Group.prototype.isEmpty = function () {
+  return this.ideas.length === 0;
+}
 Group.prototype.moveIdea = function (idea) {
-  var currentIdx = this.indexOf(idea.id);
+  var currentIdx = this.indexOf(idea.id), nextIdx;
+  console.log('Group.moveIdea(): idea.group = %d, idea.id = %d, idea.next = %d', idea.group, idea.id, idea.next);
   if (currentIdx < 0)
     return;
   if (typeof idea.next !== 'number')
     return;
   this.ideas.splice(currentIdx, 1);
-  var nextIdx = this.indexOf(idea.next);
-  if (nextIdx < 0)
+  if (idea.next < 0) {
     this.ideas.push(idea);
-  else
-    this.ideas.insertBefore(nextIdx, idea);
+  }
+  else {
+    nextIdx = this.indexOf(idea.next);
+    if (nextIdx < 0)
+      this.ideas.push(idea);
+    else
+      this.ideas.insertBefore(nextIdx, idea);
+  }
   console.log('Group.moveIdea() -> ', idea);
 }
 
@@ -78,25 +85,25 @@ var Board = function (name) {
   this.fileName = this.makeFileName();
   this.users = [];
   this.lastId = 0;
-  this.groups = [];
+  this.groups = {};
   if (typeof name === 'string')
     this.load(name);
 }
-Board.initDatabase = function () {
-  db.serialize(function () {
-    if (!fs.existsSync(dbfile)) {
-      db.run('CREATE TABLE brainshoppro (' +
-        'id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,' +
-        'board TEXT,' +
-        'entry TEXT,' +
-        'group INTEGER,' +
-        'created DATETIME,' +
-        'user TEXT' +
-        ')'
-        );
-    }
-  });
-}
+//Board.initDatabase = function () {
+//  db.serialize(function () {
+//    if (!fs.existsSync(dbfile)) {
+//      db.run('CREATE TABLE brainshoppro (' +
+//        'id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,' +
+//        'board TEXT,' +
+//        'entry TEXT,' +
+//        'group INTEGER,' +
+//        'created DATETIME,' +
+//        'user TEXT' +
+//        ')'
+//        );
+//    }
+//  });
+//}
 Board.loadAll = function () {
   fs.readdirSync('boards').each(function (i, boardFileName) {
     var m = boardFileName.match(/(.+)\.json$/);
@@ -150,18 +157,23 @@ Board.prototype.getLastId = function () {
   this.lastId = lastId;
 }
 Board.prototype.load = function () {
-  var groups = [];
+  var groups = {};
   var exists = fs.existsSync(this.fileName);
-  var all = exists ? JSON.parse(fs.readFileSync(this.fileName, { encoding: 'utf8' })) : [];
-  all.each(function (i, ideas) { groups.push(new Group(ideas)); });
+  var all = exists ? JSON.parse(fs.readFileSync(this.fileName, { encoding: 'utf8' })) : {};
+  all.each(function (i, ideas) {
+    if (ideas.length > 0)
+      groups[i] = new Group(ideas);
+  });
   this.groups = groups;
   this.getLastId();
-  console.log('Board "%s" loaded (lastId = %d)', this.name, this.lastId);
+  console.log('Board "%s" loaded (lastId = %d)', this.name, this.lastId, this.groups);
 }
 Board.prototype.save = function () {
-  var data = [], i;
-  for (i = 0; i < this.groups.length; ++i)
-    data.push(this.groups[i].ideas);
+  var data = {}, i;
+  this.groups.each(function (i, group) {
+    if (!group.isEmpty())
+      data[i] = group.ideas;
+  });
   fs.writeFileSync(this.fileName, JSON.stringify(data), { flag: 'w+', encoding: 'utf8' });
 }
 Board.prototype.addUser = function (user) {
@@ -171,43 +183,58 @@ Board.prototype.addToBoards = function () {
   boards[this.name] = this;
 }
 Board.prototype.getIdea = function (id) {
-  for (var i = 0; i < this.groups.length; ++i) {
-    var idea = this.groups[i].getIdea(id);
+  var i, idea, group, keys = Object.keys(this.groups), N = keys.length;
+  for (i = 0; i < N; ++i) {
+    idea = this.groups[keys[i]].getIdea(id);
     if (idea !== null)
       return idea;
   }
   return null;
 }
 Board.prototype.setIdea = function (idea) {
-  if (typeof this.groups[idea.group] === 'undefined')
-    this.groups[idea.group] = new Group();
   this.groups[idea.group].setIdea(idea);
 }
 Board.prototype.addIdea = function (idea) {
   this.groups[idea.group].addIdea(idea);
 }
 Board.prototype.moveIdea = function (idea) {
-  var group, groupIdx, N = this.groups.length;
-  for (groupIdx = 0; groupIdx < N; ++groupIdx) {
+  var group, groupIdx, i, newGroup, keys = Object.keys(this.groups), N = keys.length;
+  for (i = 0; i < N; ++i) {
+    groupIdx = keys[i];
     group = this.groups[groupIdx];
+    if (typeof group === 'undefined')
+      continue;
     if (group.indexOf(idea.id) < 0)
       continue; // because group doesn't contain this idea
-    if (idea.group === groupIdx) {
+    if (idea.group === i) {
       // idea hasn't moved to another group
       group.moveIdea(idea);
     }
     else {
       // idea has moved to another group
+      console.log('Group.moveIdea(): idea.group = %d, idea.id = %d, idea.next = %d', idea.group, idea.id, idea.next);
       group.removeIdea(idea.id);
+      if (group.isEmpty())
+        delete this.groups[groupIdx];
+      this.groups[idea.group] = this.groups[idea.group] || new Group;
       this.groups[idea.group].addIdea(idea);
     }
   }
 }
 Board.prototype.removeIdea = function (id) {
-  for (var i = 0; i < this.groups.length; ++i)
-    this.groups[i].removeIdea(id);
+  var i, group, groupIdx, keys = Object.keys(this.groups), N = keys.length;
+  for (i = 0; i < N; ++i) {
+    groupIdx = keys[i];
+    group = this.groups[groupIdx];
+    if (typeof group === 'object') {
+      group.removeIdea(id);
+      if (group.isEmpty())
+        delete this.groups[groupIdx];
+    }
+  }
 }
 Board.prototype.sendToAllUsers = function (message) {
+  console.log('sendToAllUsers() -> ', message);
   var msg = JSON.stringify(message), invalid = {}, i;
   for (i = 0; i < this.users.length; ++i) {
     try {
@@ -226,5 +253,4 @@ Board.prototype.sendToAllUsers = function (message) {
   this.users = u;
 }
 
-exports.Group = Group;
 exports.Board = Board;

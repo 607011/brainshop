@@ -15,22 +15,23 @@ jQuery.fn.moveBetweenGroups = function (el) {
   var handle = this, target = $(el), dx, dy, placeholder = null;
   this.bind({
     mousedown: function (e) {
-      var pos = target.offset();
+      var pos;
+      pos = target.offset();
       dx = e.pageX - pos.left;
       dy = e.pageY - pos.top;
       target.css('cursor', 'move').css('z-index', 9999);
       $(document).bind({
         selectstart: function () { return false; },
         mousemove: function (e) {
-          var closest;
-          var maxX = $(window).width() - target.width();
-          var maxY = $(window).height() - target.height();
-          var x = (e.pageX - dx).clamp(0, maxX - 8);
-          var y = (e.pageY - dy).clamp(0, maxY - 8);
-          var display = target.css('display');
+          var closest, maxX, maxY, x, y, display, below, group;
+          maxX = $(window).width() - target.width();
+          maxY = $(window).height() - target.height();
+          x = (e.pageX - dx).clamp(0, maxX - 8);
+          y = (e.pageY - dy).clamp(0, maxY - 8);
+          display = target.css('display');
           target.css('display', 'none');
-          var below = $(document.elementFromPoint(e.pageX, e.pageY));
-          var group = below.filter('.group');
+          below = $(document.elementFromPoint(e.pageX, e.pageY));
+          group = below.filter('.group');
           if (group.length === 0)
             group = below.parents('.group');
           if (group.length === 0) {
@@ -49,10 +50,11 @@ jQuery.fn.moveBetweenGroups = function (el) {
       });
     },
     mouseup: function (e) {
+      var groupId;
       $(document).unbind('mousemove').unbind('selectstart');
       target.removeAttr('style');
       if (placeholder !== null) {
-        var groupId = placeholder.parents('.group').attr('data-id');
+        groupId = placeholder.parents('.group').attr('data-id');
         target.attr('data-group', groupId);
         placeholder.replaceWith(target);
         $.event.trigger({ type: 'ideamoved', message: { id: parseInt(target.attr('data-id')), group: groupId } });
@@ -108,13 +110,29 @@ var Brainstorm = (function () {
   }
 
   function updateIdea(data) {
-    var box = $('#idea-' + data.id);
     console.log('updateIdea()', data);
+    var box = $('#idea-' + data.id), group = $('#group-' + data.group);
     box.find('#likes-' + data.id).text((data.likes || []).length);
     box.find('#dislikes-' + data.id).text((data.dislikes || []).length);
     box.find('#idea-text-' + data.id).html(data.text);
-    if (typeof data.next === 'number')
-      box.insertBefore($('#idea-' + data.next));
+    if (group.length === 0) {
+      group = newGroup(data.group);
+      group.append(box);
+    }
+    else {
+      if (typeof data.next === 'number') {
+        if (data.next < 0) {
+          if (group.children().last().attr('id') === 'new-idea')
+            box.insertBefore($('#new-idea'));
+          else
+            group.append(box);
+        }
+        else {
+          box.insertBefore($('#idea-' + data.next));
+        }
+      }
+      cleanGroups();
+    }
     box.addClass('blink-once');
     setTimeout(function () {
       $('#idea-' + data.id).removeClass('blink-once');
@@ -225,12 +243,10 @@ var Brainstorm = (function () {
             if (group.length === 0)
               group = newGroup(data.group);
             idea.prepend(header).attr('data-group', data.group).attr('data-id', data.id);
-            if (typeof data.next === 'undefined' || data.next < 0) {
-              group.append(idea);
-            }
-            else {
+            if (typeof data.next === 'number' && data.next >= 0)
               $('#idea-' + data.next).before(idea);
-            }
+            else
+              group.append(idea);
             $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header).html('[' + data.id + ']');
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
               keypress: function (e) {
@@ -240,7 +256,6 @@ var Brainstorm = (function () {
                 }
               }
             });
-            $('#new-idea').appendTo($('#group-' + data.group)); // moves #new-idea to group
             if (data.last) {
               currentGroup = data.group;
               group = $('#group-' + currentGroup);
@@ -250,6 +265,7 @@ var Brainstorm = (function () {
               }
               newIdeaBox();
             }
+            $('#new-idea').appendTo($('#group-' + data.group)); // moves #new-idea to group
           }
           break;
         case 'board-list':
@@ -295,6 +311,7 @@ var Brainstorm = (function () {
               setTimeout(function () {
                 $('#board').find('#idea-' + data.id).remove();
               }, 300);
+              cleanGroups();
               break;
             default:
               break;
@@ -307,6 +324,9 @@ var Brainstorm = (function () {
   }
 
   function newIdeaBox() {
+    if ($('#new-idea').length > 0)
+      return;
+    console.log('newIdeaBox()', 'currentGroup =', currentGroup);
     var idea = $('<span class="message" id="new-idea">'
       + '<span class="header"></span>'
       + '<span class="body">'
@@ -325,6 +345,7 @@ var Brainstorm = (function () {
   }
 
   function cleanGroups() {
+    console.log('cleanGroups()');
     $('.group').each(function (i, g) {
       var group = $(g);
       if (group.children().length === 0)
@@ -339,9 +360,7 @@ var Brainstorm = (function () {
   }
 
   function newGroupEvent(e) {
-    var target = e.message.target;
-    var group = newGroup(++lastGroup);
-    currentGroup = lastGroup;
+    var target = e.message.target, group = newGroup(++lastGroup);
     if (group.children().length === 0)
       group.append(target);
     cleanGroups();
@@ -358,15 +377,9 @@ var Brainstorm = (function () {
       openSocket();
       $(window).bind({
         newgroup: newGroupEvent,
-        ideamoved: function (e) { // TODO
-          var ideaId = e.message.id;
-          var thisIdea = $('#idea-' + ideaId);
-          var nextIdea = thisIdea.next();
-          var nextIdeaId = parseInt(nextIdea.attr('data-id')) || -1;
+        ideamoved: function (e) {
+          var ideaId = e.message.id, nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id')) || -1;
           sendIdea(ideaId, { next: nextIdeaId });
-          var nextIdea = thisIdea.next('[id^="idea-]');
-          if (nextIdea.length > 0)
-            sendIdea(parseInt(nextIdea.attr('data-id')), { next: ideaId });
           cleanGroups();
           $('#input').trigger('focus');
         }
