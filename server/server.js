@@ -113,15 +113,11 @@ function main() {
                 board.save();
                 Board.informAllUsers();
               }
-              else {
-                sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
-              }
+              sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
               board.addUser(ws);
               lastGroupId = Object.keys(board.groups).slice(-1);
-              console.log('lastGroupId = ', lastGroupId);
               board.groups.each(function (groupId, group) {
                 if (typeof group === 'object') {
-                  console.log('Processing group# %d ...', groupId);
                   if (group.ideas.length > 0) {
                     group.ideas.each(function (j, idea) {
                       idea.last = (j === group.ideas.length - 1) && (groupId == lastGroupId);
@@ -169,4 +165,10 @@ function main() {
   });
 }
 
-main();
+try {
+  main();
+}
+catch (e) {
+  // soft error handling
+  console.error(e);
+}

@@ -6,7 +6,10 @@ var fs = require('fs');
 //var dbfile = 'brainshop-pro.sqlite';
 //var db = new sqlite3.Database(dbfile);
 
+var DefaultBoardName = 'Brainstorm';
+
 var boards = {};
+
 
 Array.prototype.insertBefore = function (idx, item) {
   this.splice(idx, 0, item);
@@ -61,7 +64,6 @@ Group.prototype.isEmpty = function () {
 }
 Group.prototype.moveIdea = function (idea) {
   var currentIdx = this.indexOf(idea.id), nextIdx;
-  console.log('Group.moveIdea(): idea.group = %d, idea.id = %d, idea.next = %d', idea.group, idea.id, idea.next);
   if (currentIdx < 0)
     return;
   if (typeof idea.next !== 'number')
@@ -77,7 +79,6 @@ Group.prototype.moveIdea = function (idea) {
     else
       this.ideas.insertBefore(nextIdx, idea);
   }
-  console.log('Group.moveIdea() -> ', idea);
 }
 
 var Board = function (name) {
@@ -105,14 +106,19 @@ var Board = function (name) {
 //  });
 //}
 Board.loadAll = function () {
+  var board;
   fs.readdirSync('boards').each(function (i, boardFileName) {
-    var m = boardFileName.match(/(.+)\.json$/);
+    var m = boardFileName.match(/(.+)\.json$/), name, board;
     if (m && m.length > 1) {
-      var name = m[1];
-      var board = new Board(name);
+      name = m[1];
+      board = new Board(name);
       board.addToBoards();
     }
   });
+  if (boards.length === 0) {
+    board = new Board(DefaultBoardName);
+    board.addToBoards();
+  }
 }
 Board.all = function (board) {
   return (typeof board === 'string')? boards[board] : boards;
@@ -165,10 +171,8 @@ Board.prototype.load = function () {
       groups[i] = new Group(ideas);
   });
   this.groups = groups;
-  if (Object.keys(this.groups).length === 0) {
-    console.log('Board "%s" is empty. Initializing with empty Group ...', this.name);
-    this.groups[0] = new Group;
-  }
+  if (Object.keys(this.groups).length === 0)
+    this.groups['0'] = new Group;
   this.getLastId();
   console.log('Board "%s" loaded (lastId = %d)', this.name, this.lastId, this.groups);
 }
