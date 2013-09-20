@@ -98,12 +98,12 @@ var Brainstorm = (function () {
     if (user === '')
       return;
     if (typeof id === 'undefined') {
-      msg = mix({ board: boardName, type: 'idea', group: 0, text: $('#input').val().trimmed(), user: user }, optional);
+      msg = mix({ board: boardName, type: 'idea', group: $('#new-idea').attr('data-group'), text: $('#input').val().trimmed(), user: user }, optional);
       send(msg);
       $('#input').val('');
     }
     else {
-      msg = mix({ board: boardName, type: 'idea', id: id, group: parseInt($('#idea-' + id).attr('data-group')), text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() }, optional);
+      msg = mix({ board: boardName, type: 'idea', id: id, group: $('#idea-' + id).attr('data-group'), text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() }, optional);
       send(msg);
     }
     $('#new-idea').remove();
@@ -155,12 +155,16 @@ var Brainstorm = (function () {
     boardChanged();
   }
 
+  function focusOnInput() {
+    $('#input').trigger('focus');
+  }
+
   function openSocket() {
     $('#status').removeAttr('class').html('connecting&nbsp;&hellip;');
     socket = new WebSocket(URL);
     socket.onopen = function () {
       $('.message').css('opacity', 1);
-      $('#input').removeAttr('disabled').trigger('focus');
+      $('#input').removeAttr('disabled');
       $('#uid').removeAttr('disabled');
       $('#status').attr('class', 'ok').text('connected');
       if (reconnectTimer !== null) {
@@ -199,6 +203,7 @@ var Brainstorm = (function () {
 
     socket.onmessage = function (e) {
       var data = JSON.parse(e.data), i, idea, ok, board, name, header, group;
+      console.log('received -> ', data);
       switch (data.type) {
         case 'idea':
           if ($('#idea-' + data.id).length > 0) {
@@ -210,52 +215,53 @@ var Brainstorm = (function () {
             data.likes = data.likes || [];
             data.dislikes = data.dislikes || [];
             data.group = data.group || 0;
-            console.log(data);
-            header = $('<span class="header"></span>').append($('<span class="menu"></span>')
-              .append($('<span>' + data.likes.length + '</span>').attr('id', 'likes-' + data.id))
-              .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
-                .click(function (e) {
-                  send({ type: 'command', command: 'like', board: boardName, id: data.id, group: data.group });
-                })
-              )
-              .append($('<span>' + data.dislikes.length + '</span>').attr('id', 'dislikes-' + data.id))
-              .append($('<span class="icon thumb-down" title="Nicht so doll"></span>')
-                .click(function (e) {
-                  send({ type: 'command', command: 'dislike', board: boardName, id: data.id });
-                })
-              )
-              .append($('<span class="icon trash" title="in den Müll"></span>')
-                .click(function (e) {
-                  ok = confirm('Eintrag "' + data.text + '" (#' + data.id + ') wirklich löschen?');
-                  if (ok)
-                    send({ type: 'command', board: boardName, command: 'delete', id: data.id, group: data.group });
-                }
-              )
-            ));
-            idea = $('<span class="message" id="idea-' + data.id + '">'
-              + '<span class="body"><span class="idea" id="idea-text-' + data.id + '">' + data.text + '</span></span>'
-              + '<span class="footer">'
-              + '<span class="date">' + data.date + '</span>'
-              + '<span class="user" id="user-' + data.id + '">' + data.user + '</span>'
-              + '</span>'
-              + '</span>');
             group = $('#group-' + data.group);
             if (group.length === 0)
               group = newGroup(data.group);
-            idea.prepend(header).attr('data-group', data.group).attr('data-id', data.id);
-            if (typeof data.next === 'number' && data.next >= 0)
-              $('#idea-' + data.next).before(idea);
-            else
-              group.append(idea);
-            $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header);
-            $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
-              keypress: function (e) {
-                if (e.keyCode === 13 && !e.shiftKey) {
-                  sendIdea(data.id);
-                  e.preventDefault();
+            if (typeof data.id !== 'undefined') {
+              header = $('<span class="header"></span>').append($('<span class="menu"></span>')
+                .append($('<span>' + data.likes.length + '</span>').attr('id', 'likes-' + data.id))
+                .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
+                  .click(function (e) {
+                    send({ type: 'command', command: 'like', board: boardName, id: data.id, group: data.group });
+                  })
+                )
+                .append($('<span>' + data.dislikes.length + '</span>').attr('id', 'dislikes-' + data.id))
+                .append($('<span class="icon thumb-down" title="Nicht so doll"></span>')
+                  .click(function (e) {
+                    send({ type: 'command', command: 'dislike', board: boardName, id: data.id });
+                  })
+                )
+                .append($('<span class="icon trash" title="in den Müll"></span>')
+                  .click(function (e) {
+                    ok = confirm('Eintrag "' + data.text + '" (#' + data.id + ') wirklich löschen?');
+                    if (ok)
+                      send({ type: 'command', board: boardName, command: 'delete', id: data.id, group: data.group });
+                  }
+                )
+              ));
+              idea = $('<span class="message" id="idea-' + data.id + '">'
+                + '<span class="body"><span class="idea" id="idea-text-' + data.id + '">' + data.text + '</span></span>'
+                + '<span class="footer">'
+                + '<span class="date">' + data.date + '</span>'
+                + '<span class="user" id="user-' + data.id + '">' + data.user + '</span>'
+                + '</span>'
+                + '</span>');
+              idea.prepend(header).attr('data-group', data.group).attr('data-id', data.id);
+              if (typeof data.next === 'number' && data.next >= 0)
+                $('#idea-' + data.next).before(idea);
+              else
+                group.append(idea);
+              $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header);
+              $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
+                keypress: function (e) {
+                  if (e.keyCode === 13 && !e.shiftKey) {
+                    sendIdea(data.id);
+                    e.preventDefault();
+                  }
                 }
-              }
-            });
+              });
+            }
             if (data.last) {
               currentGroup = data.group;
               group = $('#group-' + currentGroup);
@@ -266,6 +272,7 @@ var Brainstorm = (function () {
               newIdeaBox();
             }
             $('#new-idea').appendTo($('#group-' + data.group)); // moves #new-idea to group
+            focusOnInput();
           }
           break;
         case 'board-list':
@@ -312,6 +319,7 @@ var Brainstorm = (function () {
                 $('#board').find('#idea-' + data.id).remove();
                 cleanGroups();
               }, 300);
+              focusOnInput();
               break;
             default:
               break;
@@ -331,16 +339,18 @@ var Brainstorm = (function () {
       + '<span class="body">'
       + '<input type="text" id="input" placeholder="meine tolle Idee" />'
       + '</span>'
-      + '</span>');
+      + '</span>').attr('data-group', currentGroup);
     $('#group-' + currentGroup).append(idea);
     $('#input').bind('keyup', function (e) {
+      if (e.target.value.length > 100) {
+        e.preventDefault();
+        return;
+      }
       if (e.keyCode === 13 && e.target.value.length > 0) {
         sendIdea();
         e.preventDefault();
       }
-      if (e.target.value.length > 100)
-        e.preventDefault();
-    }).trigger('focus');
+    });
   }
 
   function cleanGroups() {
@@ -368,7 +378,7 @@ var Brainstorm = (function () {
     var ideaId = e.message.id, nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id')) || -1;
     sendIdea(ideaId, { next: nextIdeaId });
     cleanGroups();
-    $('#input').trigger('focus');
+    focusOnInput();
   }
 
   return {

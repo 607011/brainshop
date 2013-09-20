@@ -63,6 +63,7 @@ function main() {
   wss = new WebSocketServer({ port: 8889 });
   wss.on('connection', function (ws) {
     function sendToClient(msg) {
+      console.log('sendToClient() -> ', msg);
       ws.send(JSON.stringify(msg));
     }
     ws.on('close', function (message) {
@@ -109,6 +110,7 @@ function main() {
               if (typeof board === 'undefined') {
                 board = new Board(data.board);
                 Board.set(data.board, board);
+                board.save();
                 Board.informAllUsers();
               }
               else {
@@ -116,15 +118,21 @@ function main() {
               }
               board.addUser(ws);
               lastGroupId = Object.keys(board.groups).slice(-1);
-              console.log('lastGroupId =', lastGroupId);
+              console.log('lastGroupId = ', lastGroupId);
               board.groups.each(function (groupId, group) {
                 if (typeof group === 'object') {
-                  group.ideas.each(function (j, idea) {
-                    idea.last = (j === group.ideas.length - 1) && (groupId == lastGroupId);
-                    idea.group = groupId;
-                    sendToClient(idea);
-                    delete idea.last;
-                  })
+                  console.log('Processing group# %d ...', groupId);
+                  if (group.ideas.length > 0) {
+                    group.ideas.each(function (j, idea) {
+                      idea.last = (j === group.ideas.length - 1) && (groupId == lastGroupId);
+                      idea.group = groupId;
+                      sendToClient(idea);
+                      delete idea.last;
+                    });
+                  }
+                  else {
+                    sendToClient({ type: 'idea', last: true, group: groupId });
+                  }
                 }
               });
               break;

@@ -87,7 +87,7 @@ var Board = function (name) {
   this.lastId = 0;
   this.groups = {};
   if (typeof name === 'string')
-    this.load(name);
+    this.load();
 }
 //Board.initDatabase = function () {
 //  db.serialize(function () {
@@ -165,6 +165,10 @@ Board.prototype.load = function () {
       groups[i] = new Group(ideas);
   });
   this.groups = groups;
+  if (Object.keys(this.groups).length === 0) {
+    console.log('Board "%s" is empty. Initializing with empty Group ...', this.name);
+    this.groups[0] = new Group;
+  }
   this.getLastId();
   console.log('Board "%s" loaded (lastId = %d)', this.name, this.lastId, this.groups);
 }
@@ -175,6 +179,9 @@ Board.prototype.save = function () {
       data[i] = group.ideas;
   });
   fs.writeFileSync(this.fileName, JSON.stringify(data), { flag: 'w+', encoding: 'utf8' });
+}
+Board.prototype.isEmpty = function () {
+  return Object.keys(this.groups).length === 0;
 }
 Board.prototype.addUser = function (user) {
   this.users.push(user);
@@ -212,7 +219,6 @@ Board.prototype.moveIdea = function (idea) {
     }
     else {
       // idea has moved to another group
-      console.log('Group.moveIdea(): idea.group = %d, idea.id = %d, idea.next = %d', idea.group, idea.id, idea.next);
       group.removeIdea(idea.id);
       if (group.isEmpty())
         delete this.groups[groupIdx];
