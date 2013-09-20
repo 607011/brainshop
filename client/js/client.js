@@ -247,7 +247,7 @@ var Brainstorm = (function () {
               $('#idea-' + data.next).before(idea);
             else
               group.append(idea);
-            $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header).html('[' + data.id + ']');
+            $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header);
             $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
               keypress: function (e) {
                 if (e.keyCode === 13 && !e.shiftKey) {
@@ -301,7 +301,7 @@ var Brainstorm = (function () {
               return;
             }
             if (e.keyCode === 13 && e.target.value != '')
-                setBoard(e.target.value);
+              setBoard(e.target.value);
           })
           break;
         case 'command':
@@ -326,7 +326,6 @@ var Brainstorm = (function () {
   function newIdeaBox() {
     if ($('#new-idea').length > 0)
       return;
-    console.log('newIdeaBox()', 'currentGroup =', currentGroup);
     var idea = $('<span class="message" id="new-idea">'
       + '<span class="header"></span>'
       + '<span class="body">'
@@ -345,7 +344,6 @@ var Brainstorm = (function () {
   }
 
   function cleanGroups() {
-    console.log('cleanGroups()');
     $('.group').each(function (i, g) {
       var group = $(g);
       if (group.children().length === 0)
@@ -366,6 +364,13 @@ var Brainstorm = (function () {
     cleanGroups();
   }
 
+  function onIdeaMoved(e) {
+    var ideaId = e.message.id, nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id')) || -1;
+    sendIdea(ideaId, { next: nextIdeaId });
+    cleanGroups();
+    $('#input').trigger('focus');
+  }
+
   return {
     init: function () {
       user = localStorage.getItem('user') || '';
@@ -377,12 +382,7 @@ var Brainstorm = (function () {
       openSocket();
       $(window).bind({
         newgroup: newGroupEvent,
-        ideamoved: function (e) {
-          var ideaId = e.message.id, nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id')) || -1;
-          sendIdea(ideaId, { next: nextIdeaId });
-          cleanGroups();
-          $('#input').trigger('focus');
-        }
+        ideamoved: onIdeaMoved,
       });
       $('#uid').val(user).bind({
         keypress: function (e) {
