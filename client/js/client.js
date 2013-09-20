@@ -310,8 +310,8 @@ var Brainstorm = (function () {
               $('#board').find('#idea-' + data.id).addClass('deleting');
               setTimeout(function () {
                 $('#board').find('#idea-' + data.id).remove();
+                cleanGroups();
               }, 300);
-              cleanGroups();
               break;
             default:
               break;
