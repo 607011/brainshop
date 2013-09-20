@@ -71,8 +71,7 @@ var Brainstorm = (function () {
   var PORT = 8889;
   var URL = 'ws://' + HOST + ':' + PORT + '/';
   var socket;
-  var connectionEstablished = false;
-  var RETRY_SECS = 5+1;
+  var RETRY_SECS = 5 + 1;
   var retry_secs;
   var reconnectTimer = null;
   var user;
@@ -171,7 +170,6 @@ var Brainstorm = (function () {
         clearInterval(reconnectTimer);
         reconnectTimer = null;
       }
-      connectionEstablished = true;
       boardChanged();
     };
     socket.onerror = function (error) {

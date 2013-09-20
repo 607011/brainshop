@@ -7,6 +7,7 @@ var WebSocketServer = require('ws').Server;
 var mime = require('mime');
 var url = require('url');
 var http = require('http');
+var auth = require('http-auth');
 var Board = require('./board').Board;
 
 function pad0(x) {
@@ -39,11 +40,15 @@ Array.prototype.add = function (val) {
 };
 
 function main() {
-  http.createServer(function httpServer(req, res) {
+  var basic = auth.basic({
+    realm: 'BrainShop Pro',
+    file: __dirname + "/../data/users.htpasswd" // gevorg:gpass, Sarah:testpass ...
+  });
+  http.createServer(basic, function httpServer(req, res) {
     var pathName = url.parse(req.url).pathname;
     if (pathName === '/')
       pathName = '/index.html';
-    var file = '../client' + pathName;
+    var file = __dirname + '/../client' + pathName;
     fs.exists(file, function (exists) {
       if (exists) {
         res.writeHead(200, { 'Content-type': mime.lookup(file) });
