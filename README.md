@@ -1,6 +1,7 @@
 # Fehler
 
- * Verschieben einer Idee ans Ende einer Gruppe ermöglichen
+ * Verschieben einer Idee ans Ende einer Gruppe
+ * Löschen von Boards
 
 
 # Schlüssel für HTTPS generieren

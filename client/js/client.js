@@ -149,6 +149,7 @@ var Brainstorm = (function () {
   }
 
   function setBoard(name) {
+    showLoaderIcon();
     boardName = name;
     localStorage.setItem('lastBoardName', boardName);
     boardChanged();
@@ -162,7 +163,6 @@ var Brainstorm = (function () {
     $('#status').removeAttr('class').html('connecting&nbsp;&hellip;');
     socket = new WebSocket(URL);
     socket.onopen = function () {
-      $('#loader-icon').remove();
       $('.message').css('opacity', 1);
       $('#input').removeAttr('disabled');
       $('#uid').removeAttr('disabled');
@@ -295,6 +295,7 @@ var Brainstorm = (function () {
               board.addClass('active');
             board.prepend(header);
             $('#available-boards').append(board);
+            hideLoaderIcon();
           });
           board = $('<span class="board">'
             + '<span class="header">neues Board</span>'
@@ -380,6 +381,14 @@ var Brainstorm = (function () {
     focusOnInput();
   }
 
+  function showLoaderIcon() {
+    $('#loader-icon').css('display', 'inline-block').css('visibility', 'visible').css('position', 'absolute').css('left', Math.round(($(window).width() - 25) / 2) + 'px').css('top', Math.round(($(window).height() - 25) / 2) + 'px');
+  }
+
+  function hideLoaderIcon() {
+    $('#loader-icon').css('display', 'none');
+  }
+
   return {
     init: function () {
       user = localStorage.getItem('user') || '';
@@ -389,7 +398,7 @@ var Brainstorm = (function () {
         alert('Du bist zum ersten Mal hier. Trage bitte dein Kürzel in das blinkende Feld ein.');
       }
       else {
-        $('#loader-icon').css('visibility', 'visible').css('position', 'absolute').css('left', Math.round(($(window).width() - 25) / 2) + 'px').css('top', Math.round(($(window).height() - 25) / 2) + 'px');
+        showLoaderIcon();
       }
       openSocket();
       $(window).bind({
