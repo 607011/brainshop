@@ -2,9 +2,6 @@
 // All rights reserved.
 
 var fs = require('fs');
-//var sqlite3 = require('sqlite3');
-//var dbfile = 'brainshop-pro.sqlite';
-//var db = new sqlite3.Database(dbfile);
 
 var DefaultBoardName = 'Brainstorm';
 
@@ -15,20 +12,12 @@ Array.prototype.insertBefore = function (idx, item) {
   this.splice(idx, 0, item);
 }
 
-var Idea = function (data) {
-  this.type = 'idea';
-  this.id = data.id;
-  this.text = data.text;
-  this.group = data.group;
-  this.user = data.user;
-  this.board = data.board;
-  this.date = data.date;
-}
-
 var Group = function (ideas) {
   this.ideas = ideas || [];
 }
 Group.prototype.addIdea = function (idea) {
+  if (typeof idea !== 'object')
+    return;
   if (typeof idea.next === 'number' && idea.next >= 0)
     this.ideas.insertBefore(this.indexOf(idea.next), idea);
   else
@@ -90,21 +79,6 @@ var Board = function (name) {
   if (typeof name === 'string')
     this.load();
 }
-//Board.initDatabase = function () {
-//  db.serialize(function () {
-//    if (!fs.existsSync(dbfile)) {
-//      db.run('CREATE TABLE brainshoppro (' +
-//        'id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,' +
-//        'board TEXT,' +
-//        'entry TEXT,' +
-//        'group INTEGER,' +
-//        'created DATETIME,' +
-//        'user TEXT' +
-//        ')'
-//        );
-//    }
-//  });
-//}
 Board.loadAll = function () {
   var board;
   fs.readdirSync('boards').each(function (i, boardFileName) {
@@ -167,8 +141,10 @@ Board.prototype.load = function () {
   var exists = fs.existsSync(this.fileName);
   var all = exists ? JSON.parse(fs.readFileSync(this.fileName, { encoding: 'utf8' })) : {};
   all.each(function (i, ideas) {
-    if (ideas.length > 0)
+    if (ideas.length > 0) {
+      ideas.each(function (j, idea) { idea.group = i; });
       groups[i] = new Group(ideas);
+    }
   });
   this.groups = groups;
   if (Object.keys(this.groups).length === 0)
@@ -179,8 +155,12 @@ Board.prototype.load = function () {
 Board.prototype.save = function () {
   var data = {}, i;
   this.groups.each(function (i, group) {
-    if (!group.isEmpty())
+    if (!group.isEmpty()) {
       data[i] = group.ideas;
+      group.ideas.each(function (j, idea) {
+        delete idea.group;
+      });
+    }
   });
   fs.writeFileSync(this.fileName, JSON.stringify(data), { flag: 'w+', encoding: 'utf8' });
 }

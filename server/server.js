@@ -42,7 +42,7 @@ Array.prototype.add = function (val) {
 function main() {
   var basic = auth.basic({
     realm: 'BrainShop Pro',
-    file: __dirname + "/../data/users.htpasswd" // gevorg:gpass, Sarah:testpass ...
+    file: __dirname + "/../data/users.htpasswd"
   });
   http.createServer(basic, function httpServer(req, res) {
     var pathName = url.parse(req.url).pathname;
@@ -62,7 +62,6 @@ function main() {
     });
   }).listen(8888);
 
-  // Board.initDatabase();
   Board.loadAll();
 
   wss = new WebSocketServer({ port: 8889 });
@@ -82,8 +81,7 @@ function main() {
           now = new Date;
           data.date = now.getFullYear() + '-' + pad0(now.getMonth() + 1) + '-' + pad0(now.getDate()) + ' ' + pad0(now.getHours()) + ':' + pad0(now.getMinutes());
           board = Board.all()[data.board];
-          if (typeof data.id === 'undefined') {
-            // new entry
+          if (typeof data.id === 'undefined') { // new entry
             data.id = board.incId();
             data.likes = [];
             data.dislikes = [];
@@ -92,8 +90,7 @@ function main() {
             board.sendToAllUsers(data);
             idea = data;
           }
-          else {
-            // update entry
+          else { // update entry
             idea = board.getIdea(data.id);
             idea.group = data.group;
             idea.text = data.text;
@@ -109,33 +106,33 @@ function main() {
         case 'command':
           switch (data.command) {
             case 'init':
-              if (typeof data.board === 'undefined' || data.board === '')
-                return;
-              board = Board.all(data.board);
-              if (typeof board === 'undefined') {
-                board = new Board(data.board);
-                Board.set(data.board, board);
-                board.save();
-                Board.informAllUsers();
-              }
               sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
-              board.addUser(ws);
-              lastGroupId = Object.keys(board.groups).slice(-1);
-              board.groups.each(function (groupId, group) {
-                if (typeof group === 'object') {
-                  if (group.ideas.length > 0) {
-                    group.ideas.each(function (j, idea) {
-                      idea.last = (j === group.ideas.length - 1) && (groupId == lastGroupId);
-                      idea.group = groupId;
-                      sendToClient(idea);
-                      delete idea.last;
-                    });
-                  }
-                  else {
-                    sendToClient({ type: 'idea', last: true, group: groupId });
-                  }
+              if (typeof data.board === 'string' && data.board.length > 0) {
+                board = Board.all(data.board);
+                if (typeof board === 'undefined') {
+                  board = new Board(data.board);
+                  Board.set(data.board, board);
+                  board.save();
+                  Board.informAllUsers();
                 }
-              });
+                board.addUser(ws);
+                lastGroupId = Object.keys(board.groups).slice(-1);
+                board.groups.each(function (groupId, group) {
+                  if (typeof group === 'object') {
+                    if (group.ideas.length > 0) {
+                      group.ideas.each(function (j, idea) {
+                        idea.last = (j === group.ideas.length - 1) && (groupId == lastGroupId);
+                        idea.group = groupId;
+                        sendToClient(idea);
+                        delete idea.last;
+                      });
+                    }
+                    else {
+                      sendToClient({ type: 'idea', last: true, group: groupId });
+                    }
+                  }
+                });
+              }
               break;
             case 'delete':
               board = Board.all(data.board);

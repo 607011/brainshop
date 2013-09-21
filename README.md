@@ -1,6 +1,6 @@
 # Fehler
 
- * Board# nicht als Idea-Attribut speichern, da Board# bereits Index der Idea-Liste
+ * Verschieben einer Idee ans Ende einer Gruppe ermöglichen
 
 
 # Schlüssel für HTTPS generieren
