@@ -97,6 +97,10 @@ Board.loadAll = function () {
 Board.all = function (board) {
   return (typeof board === 'string')? boards[board] : boards;
 }
+Board.delete = function (name) {
+  boards[name].delete();
+  delete boards[name];
+}
 Board.set = function (boardName, board) {
   boards[boardName] = board;
 }
@@ -118,7 +122,10 @@ Board.informAllUsers = function () {
   })
 }
 Board.prototype.makeFileName = function () {
-  return 'boards/' + this.name + '.json';
+  return __dirname + '/boards/' + this.name + '.json';
+}
+Board.prototype.delete = function () {
+  fs.unlinkSync(this.fileName);
 }
 Board.prototype.group = function (id) {
   return this.groups[id];

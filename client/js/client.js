@@ -75,7 +75,7 @@ var Brainstorm = (function () {
   var retry_secs;
   var reconnectTimer = null;
   var user;
-  var boardName;
+  var boardName, prevBoardName;
   var currentGroup = 0;
   var lastGroup = 0;
 
@@ -150,6 +150,7 @@ var Brainstorm = (function () {
 
   function setBoard(name) {
     showLoaderIcon();
+    prevBoardName = boardName;
     boardName = name;
     localStorage.setItem('lastBoardName', boardName);
     boardChanged();
@@ -270,27 +271,37 @@ var Brainstorm = (function () {
               }
               newIdeaBox();
             }
-            $('#new-idea').appendTo($('#group-' + data.group)); // moves #new-idea to group
+            $('#new-idea').appendTo($('#group-' + data.group));
             focusOnInput();
           }
           break;
         case 'board-list':
           $('#available-boards').empty();
           Object.keys(data.boards).forEach(function (i) {
-            var name = data.boards[i];
+            var name = data.boards[i], id = i;
             header = $('<span class="header"></span>');
-            //header.append($('<span class="icon trash" title="in den Müll"></span>')
-            //    .click(function (e) {
-            //      // TODO
-            //      e.preventDefault();
-            //    }
-            //  ));
-            board = $('<span class="board" title="' + name + '">'
-              + '<span class="body">' + name + '</span>'
-              + '</span>')
-              .click(function (e) {
-                setBoard($(this).text());
-              });
+            header.append($('<span class="icon trash" title="in den Müll"></span>')
+                .click(function (e) {
+                  var ok = confirm('Das Board "' + name + '" wirklich löschen?');
+                  if (ok) {
+                    if (localStorage.getItem('lastBoardName') === name)
+                      localStorage.removeItem('lastBoardName');
+                    if (boardName === name) {
+                      if (typeof prevBoardName === 'string')
+                        setBoard(prevBoardName);
+                      else {
+                        console.log('TODO');
+                      }
+                    }
+                    send({ type: 'command', command: 'delete-board', name: name });
+                  }
+                  e.preventDefault();
+                }
+              ));
+            board = $('<span class="board" title="' + name + '">')
+              .append($('<span class="body">' + name + '</span>').click(function (e) {
+                setBoard(name);
+              }));
             if (name === boardName)
               board.addClass('active');
             board.prepend(header);

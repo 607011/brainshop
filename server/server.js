@@ -160,6 +160,10 @@ function main() {
               board.sendToAllUsers(idea);
               board.save();
               break;
+            case 'delete-board':
+              Board.delete(data.name);
+              sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
+              break;
           }
           break;
       }
