@@ -61,7 +61,7 @@ jQuery.fn.moveBetweenGroups = function (el) {
         groupId = placeholder.parents('.group').attr('data-id');
         target.attr('data-group', groupId);
         placeholder.replaceWith(target);
-        $.event.trigger({ type: 'ideamoved', message: { id: parseInt(target.attr('data-id')), group: groupId } });
+        $.event.trigger({ type: 'ideamoved', message: { group: groupId, target: target } });
         placeholder = null;
       }
     }
@@ -350,11 +350,11 @@ var Brainstorm = (function () {
     if ($('#new-idea').length > 0)
       return;
     var idea = $('<span class="message" id="new-idea">'
-      + '<span class="header"></span>'
       + '<span class="body">'
       + '<input type="text" id="input" placeholder="meine tolle Idee" />'
       + '</span>'
       + '</span>').attr('data-group', currentGroup);
+    $('<span class="header" style="cursor:pointer"></span>').moveBetweenGroups(idea).prependTo(idea);
     $('#group-' + currentGroup).append(idea);
     $('#input').bind('keyup', function (e) {
       if (e.target.value.length > 100) {
@@ -390,8 +390,21 @@ var Brainstorm = (function () {
   }
 
   function onIdeaMoved(e) {
-    var ideaId = e.message.id, nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id')) || -1;
-    sendIdea(ideaId, { next: nextIdeaId });
+    var target = e.message.target, ideaId, nextIdeaId;
+    if (target.attr('id').match(/^idea-/)) {
+      ideaId = parseInt(target.attr('data-id'));
+      nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id')) || -1;
+      sendIdea(ideaId, { next: nextIdeaId });
+    }
+    else if (target.attr('id') === 'new-idea') {
+      $('#new-idea').attr('data-group', e.message.group);
+    }
+    cleanGroups();
+    focusOnInput();
+  }
+
+  function onNewIdeaMoved(e) {
+    
     cleanGroups();
     focusOnInput();
   }
@@ -418,7 +431,7 @@ var Brainstorm = (function () {
       openSocket();
       $(window).bind({
         newgroup: newGroupEvent,
-        ideamoved: onIdeaMoved,
+        ideamoved: onIdeaMoved
       });
       $('#uid').val(user).bind({
         keypress: function (e) {
