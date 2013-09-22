@@ -1,6 +1,6 @@
 # Fehler
 
- * Verschieben einer Idee ans Ende einer Gruppe
+ * Secure WebSocket verwenden
 
 
 # Schlüssel für HTTPS generieren

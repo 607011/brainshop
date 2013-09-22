@@ -64,8 +64,12 @@ function main() {
 
   Board.loadAll();
 
-  wss = new WebSocketServer({ port: 8889 });
+  wss = new WebSocketServer({
+    port: 8889,
+    // verifyClient: function (e) { console.log('VERIFY', e); }
+  });
   wss.on('connection', function (ws) {
+    // console.log(ws.upgradeReq.headers);
     function sendToClient(msg) {
       console.log('sendToClient() -> ', msg);
       ws.send(JSON.stringify(msg));

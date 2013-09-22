@@ -12,20 +12,21 @@ String.prototype.trimmed = function () {
 }
 
 jQuery.fn.moveBetweenGroups = function (el) {
-  var handle = this, target = $(el), dx, dy, placeholder = null;
+  var handle = this, target = $(el), placeholder = null;
   this.bind({
     mousedown: function (e) {
-      var pos;
-      pos = target.offset();
-      dx = e.pageX - pos.left;
-      dy = e.pageY - pos.top;
+      var pos = target.offset();
+      var dx = e.pageX - pos.left;
+      var dy = e.pageY - pos.top;
+      var targetW = target.width();
+      var targetH = target.height();
       target.css('cursor', 'move').css('z-index', 9999);
       $(document).bind({
         selectstart: function () { return false; },
         mousemove: function (e) {
           var closest, maxX, maxY, x, y, display, below, group;
-          maxX = $(window).width() - target.width();
-          maxY = $(window).height() - target.height();
+          maxX = $(window).width() - targetW;
+          maxY = $(window).height() - targetH;
           x = (e.pageX - dx).clamp(0, maxX - 8);
           y = (e.pageY - dy).clamp(0, maxY - 8);
           display = target.css('display');
@@ -36,14 +37,17 @@ jQuery.fn.moveBetweenGroups = function (el) {
             group = below.parents('.group');
           if (group.length === 0) {
             if (placeholder === null)
-              placeholder = $('<span class="placeholder"></span>').css('width', target.width() - 2);
+              placeholder = $('<span class="placeholder"></span>').css('width', targetW - 2);
             $.event.trigger({ type: 'newgroup', message: { target: placeholder } });
           }
           else {
             closest = below.closest('.message');
             if (placeholder === null)
-              placeholder = $('<span class="placeholder"></span>').css('width', target.width() - 2);
-            closest.before(placeholder);
+              placeholder = $('<span class="placeholder"></span>').css('width', targetW - 2);
+            if (e.pageX < (below.offset().left + below.width() / 2))
+              closest.before(placeholder);
+            else
+              closest.after(placeholder);
           }
           target.css('display', display).css('position', 'absolute').css('left', x + 'px').css('top', y + 'px');
         }
