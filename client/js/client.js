@@ -11,63 +11,6 @@ String.prototype.trimmed = function () {
   return this.replace(/^\s+/, '').replace(/\s+$/, '');
 }
 
-jQuery.fn.moveBetweenGroups = function (el) {
-  var handle = this, target = $(el), placeholder = null;
-  this.bind({
-    mousedown: function (e) {
-      var pos = target.offset();
-      var dx = e.pageX - pos.left;
-      var dy = e.pageY - pos.top;
-      var targetW = target.width();
-      var targetH = target.height();
-      target.css('cursor', 'move').css('z-index', 9999);
-      $(document).bind({
-        selectstart: function () { return false; },
-        mousemove: function (e) {
-          var closest, maxX, maxY, x, y, display, below, group;
-          maxX = $(window).width() - targetW;
-          maxY = $(window).height() - targetH;
-          x = (e.pageX - dx).clamp(0, maxX - 8);
-          y = (e.pageY - dy).clamp(0, maxY - 8);
-          display = target.css('display');
-          target.css('display', 'none'); // Trick 17
-          below = $(document.elementFromPoint(e.pageX, e.pageY));
-          group = below.filter('.group');
-          if (group.length === 0)
-            group = below.parents('.group');
-          if (placeholder === null)
-            placeholder = $('<span class="placeholder"></span>').css('width', (targetW - 2) + 'px').css('height', (targetH - 2) + 'px');
-          if (group.length === 0) {
-            $.event.trigger({ type: 'newgroup', message: { target: placeholder } });
-          }
-          else {
-            closest = below.closest('.message');
-            if (e.pageX < (below.offset().left + below.width() / 2))
-              closest.before(placeholder);
-            else
-              closest.after(placeholder);
-          }
-          target.css('display', display).css('position', 'absolute').css('left', x + 'px').css('top', y + 'px');
-        }
-      });
-    },
-    mouseup: function (e) {
-      var groupId;
-      $(document).unbind('mousemove').unbind('selectstart');
-      target.removeAttr('style');
-      if (placeholder !== null) {
-        groupId = placeholder.parents('.group').attr('data-id');
-        target.attr('data-group', groupId);
-        placeholder.replaceWith(target);
-        $.event.trigger({ type: 'ideamoved', message: { target: target } });
-        placeholder = null;
-      }
-    }
-  });
-  return this;
-}
-
-
 var Brainstorm = (function () {
   var HOST = document.location.hostname;
   var PORT = 8889;
@@ -80,6 +23,67 @@ var Brainstorm = (function () {
   var boardName, prevBoardName;
   var currentGroup = 0;
   var lastGroup = 0;
+  var connectionEstablished = false;
+
+  jQuery.fn.moveBetweenGroups = function (el) {
+    var handle = this, target = $(el), placeholder = null;
+    this.bind({
+      mousedown: function (e) {
+        if (!connectionEstablished)
+          return;
+        var pos = target.offset();
+        var dx = e.pageX - pos.left;
+        var dy = e.pageY - pos.top;
+        var targetW = target.width();
+        var targetH = target.height();
+        target.css('cursor', 'move').css('z-index', 9999);
+        $(document).bind({
+          selectstart: function () { return false; },
+          mousemove: function (e) {
+            var closest, maxX, maxY, x, y, display, below, group;
+            maxX = $(window).width() - targetW;
+            maxY = $(window).height() - targetH;
+            x = (e.pageX - dx).clamp(0, maxX - 8);
+            y = (e.pageY - dy).clamp(0, maxY - 8);
+            display = target.css('display');
+            target.css('display', 'none'); // Trick 17
+            below = $(document.elementFromPoint(e.pageX, e.pageY));
+            group = below.filter('.group');
+            if (group.length === 0)
+              group = below.parents('.group');
+            if (placeholder === null)
+              placeholder = $('<span class="placeholder"></span>').css('width', (targetW - 2) + 'px').css('height', (targetH - 2) + 'px');
+            if (group.length === 0) {
+              $.event.trigger({ type: 'newgroup', message: { target: placeholder } });
+            }
+            else {
+              closest = below.closest('.message');
+              if (e.pageX < (below.offset().left + below.width() / 2))
+                closest.before(placeholder);
+              else
+                closest.after(placeholder);
+            }
+            target.css('display', display).css('position', 'absolute').css('left', x + 'px').css('top', y + 'px');
+          }
+        });
+      },
+      mouseup: function (e) {
+        if (!connectionEstablished)
+          return;
+        var groupId;
+        $(document).unbind('mousemove').unbind('selectstart');
+        target.removeAttr('style');
+        if (placeholder !== null) {
+          groupId = placeholder.parents('.group').attr('data-id');
+          target.attr('data-group', groupId);
+          placeholder.replaceWith(target);
+          $.event.trigger({ type: 'ideamoved', message: { target: target } });
+          placeholder = null;
+        }
+      }
+    });
+    return this;
+  }
 
   function send(message) {
     if (typeof message.user === 'undefined')
@@ -166,9 +170,12 @@ var Brainstorm = (function () {
     $('#status').removeAttr('class').html('connecting&nbsp;&hellip;');
     socket = new WebSocket(URL);
     socket.onopen = function () {
-      $('.message').css('opacity', 1);
+      connectionEstablished = true;
+      $('#main').css('opacity', 1);
+      $('#board').css('opacity', 1);
       $('#input').removeAttr('disabled');
       $('#uid').removeAttr('disabled');
+      $('#new-board').removeAttr('disabled');
       $('#status').attr('class', 'ok').text('connected');
       if (reconnectTimer !== null) {
         clearInterval(reconnectTimer);
@@ -177,9 +184,12 @@ var Brainstorm = (function () {
       boardChanged();
     };
     socket.onerror = function (error) {
-      $('.message').css('opacity', 0.3);
+      connectionEstablished = false;
+      $('#main').css('opacity', 0.3);
+      $('#board').css('opacity', 0.3);
       $('#input').attr('disabled', 'disabled');
       $('#uid').attr('disabled', 'disabled');
+      $('#new-board').attr('disabled', 'disabled');
       $('#status').removeAttr('class').text('connection failed').addClass('error');
       retry_secs = RETRY_SECS;
       if (reconnectTimer !== null)
@@ -225,17 +235,23 @@ var Brainstorm = (function () {
                 .append($('<span>' + data.likes.length + '</span>').attr('id', 'likes-' + data.id))
                 .append($('<span class="icon thumb-up" title="Gefällt mir"></span>')
                   .click(function (e) {
+                    if (!connectionEstablished)
+                      return;
                     send({ type: 'command', command: 'like', board: boardName, id: data.id, group: data.group });
                   })
                 )
                 .append($('<span>' + data.dislikes.length + '</span>').attr('id', 'dislikes-' + data.id))
                 .append($('<span class="icon thumb-down" title="Nicht so doll"></span>')
                   .click(function (e) {
+                    if (!connectionEstablished)
+                      return;
                     send({ type: 'command', command: 'dislike', board: boardName, id: data.id });
                   })
                 )
                 .append($('<span class="icon trash" title="in den Müll"></span>')
                   .click(function (e) {
+                    if (!connectionEstablished)
+                      return;
                     ok = confirm('Eintrag "' + data.text + '" (#' + data.id + ') wirklich löschen?');
                     if (ok)
                       send({ type: 'command', board: boardName, command: 'delete', id: data.id, group: data.group });
@@ -257,6 +273,8 @@ var Brainstorm = (function () {
               $('<span class="handle"></span>').moveBetweenGroups('#idea-' + data.id).appendTo(header);
               $('#idea-text-' + data.id).attr('contentEditable', 'true').bind({
                 keypress: function (e) {
+                  if (!connectionEstablished)
+                    return;
                   if (e.keyCode === 13 && !e.shiftKey) {
                     sendIdea(data.id);
                     e.preventDefault();
@@ -284,6 +302,8 @@ var Brainstorm = (function () {
             header = $('<span class="header"></span>');
             header.append($('<span class="icon trash" title="in den Müll"></span>')
                 .click(function (e) {
+                  if (!connectionEstablished)
+                    return;
                   var ok = confirm('Das Board "' + name + '" wirklich löschen?');
                   if (ok) {
                     if (localStorage.getItem('lastBoardName') === name)
@@ -302,6 +322,8 @@ var Brainstorm = (function () {
               ));
             board = $('<span class="board" title="' + name + '">')
               .append($('<span class="body">' + name + '</span>').click(function (e) {
+                if (!connectionEstablished)
+                  return;
                 setBoard(name);
               }));
             if (name === boardName)
@@ -316,6 +338,8 @@ var Brainstorm = (function () {
             + '</span>');
           $('#available-boards').append(board);
           $('#new-board').bind('keyup', function (e) {
+            if (!connectionEstablished)
+              return;
             if (e.target.value.length > 20) {
               e.preventDefault();
               return;
@@ -355,6 +379,8 @@ var Brainstorm = (function () {
     $('<span class="header" style="cursor:pointer"></span>').moveBetweenGroups(idea).prependTo(idea);
     $('#group-' + currentGroup).append(idea);
     $('#input').bind('keyup', function (e) {
+      if (!connectionEstablished)
+        return;
       if (e.target.value.length > 100) {
         e.preventDefault();
         return;
@@ -424,10 +450,14 @@ var Brainstorm = (function () {
       });
       $('#uid').val(user).bind({
         keypress: function (e) {
+          if (!connectionEstablished)
+            return;
           if (e.target.value.length > 4)
             e.preventDefault();
         },
         keyup: function (e) {
+          if (!connectionEstablished)
+            return;
           if (e.target.value !== '') {
             user = e.target.value.trimmed();
             localStorage.setItem('user', user);

@@ -2,7 +2,6 @@
 // All rights reserved.
 
 var fs = require('fs');
-var wss;
 var WebSocketServer = require('ws').Server;
 var mime = require('mime');
 var url = require('url');
@@ -40,15 +39,17 @@ Array.prototype.add = function (val) {
 };
 
 function main() {
-  var basic = auth.basic({
+  var wss, basic;
+
+  basic = auth.basic({
     realm: 'BrainShop Pro',
     file: __dirname + "/../data/users.htpasswd"
   });
   http.createServer(basic, function httpServer(req, res) {
-    var pathName = url.parse(req.url).pathname;
+    var pathName = url.parse(req.url).pathname, file;
     if (pathName === '/')
       pathName = '/index.html';
-    var file = __dirname + '/../client' + pathName;
+    file = __dirname + '/../client' + pathName;
     fs.exists(file, function (exists) {
       if (exists) {
         res.writeHead(200, { 'Content-type': mime.lookup(file) });
@@ -64,10 +65,7 @@ function main() {
 
   Board.loadAll();
 
-  wss = new WebSocketServer({
-    port: 8889,
-    // verifyClient: function (e) { console.log('VERIFY', e); }
-  });
+  wss = new WebSocketServer({ port: 8889 });
   wss.on('connection', function (ws) {
     // console.log(ws.upgradeReq.headers);
     function sendToClient(msg) {
@@ -175,10 +173,5 @@ function main() {
   });
 }
 
-try {
-  main();
-}
-catch (e) {
-  // soft error handling
-  console.error(e);
-}
+
+main();

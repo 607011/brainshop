@@ -153,8 +153,10 @@ a {
     padding: 4px;
     background-color: #5e945f;
     margin: 10px 9px 0 1px;
-    min-width: 64px;
     min-height: 68px;
+    max-height: 50%;
+    min-width: 64px;
+    max-width: 50%;
   }
 
 #new-idea {

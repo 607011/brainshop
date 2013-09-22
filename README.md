@@ -1,6 +1,9 @@
 # Fehler
 
- * Secure WebSocket verwenden
+ * Secure WebSocket verwenden (Umstellung auf socket.io erforderlich?)
+ * Schöneres Layout für Gruppen und Ideen
+ * das Hin- und Herspringen von Ideen beim Verschieben stört manchmal
+ * sanftere Animation beim Verschieben
 
 
 # Schlüssel für HTTPS generieren

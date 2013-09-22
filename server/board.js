@@ -157,7 +157,7 @@ Board.prototype.load = function () {
   if (Object.keys(this.groups).length === 0)
     this.groups['0'] = new Group;
   this.getLastId();
-  console.log('Board "%s" loaded (lastId = %d)', this.name, this.lastId, this.groups);
+  console.log('Board "%s" loaded.', this.name);
 }
 Board.prototype.save = function () {
   var data = {}, i;
@@ -232,7 +232,7 @@ Board.prototype.removeIdea = function (id) {
   }
 }
 Board.prototype.sendToAllUsers = function (message) {
-  console.log('sendToAllUsers() -> ', message);
+  console.log('sendToAllUsers() -> message = ', message);
   var msg = JSON.stringify(message), invalid = {}, i;
   for (i = 0; i < this.users.length; ++i) {
     try {
