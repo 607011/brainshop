@@ -59,6 +59,7 @@ a {
 
 .message {
   min-height: 66px;
+  max-width: 200px;
   background-color: #d3cf2e;
 }
 
@@ -169,8 +170,8 @@ a {
   }
 
 #new-idea {
-  width: auto;
   cursor: default;
+  max-width: none;
 }
 
 #main .board {

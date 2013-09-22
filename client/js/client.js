@@ -30,20 +30,18 @@ jQuery.fn.moveBetweenGroups = function (el) {
           x = (e.pageX - dx).clamp(0, maxX - 8);
           y = (e.pageY - dy).clamp(0, maxY - 8);
           display = target.css('display');
-          target.css('display', 'none');
+          target.css('display', 'none'); // Trick 17
           below = $(document.elementFromPoint(e.pageX, e.pageY));
           group = below.filter('.group');
           if (group.length === 0)
             group = below.parents('.group');
+          if (placeholder === null)
+            placeholder = $('<span class="placeholder"></span>').css('width', (targetW - 2) + 'px').css('height', (targetH - 2) + 'px');
           if (group.length === 0) {
-            if (placeholder === null)
-              placeholder = $('<span class="placeholder"></span>').css('width', targetW - 2);
             $.event.trigger({ type: 'newgroup', message: { target: placeholder } });
           }
           else {
             closest = below.closest('.message');
-            if (placeholder === null)
-              placeholder = $('<span class="placeholder"></span>').css('width', targetW - 2);
             if (e.pageX < (below.offset().left + below.width() / 2))
               closest.before(placeholder);
             else
@@ -61,7 +59,7 @@ jQuery.fn.moveBetweenGroups = function (el) {
         groupId = placeholder.parents('.group').attr('data-id');
         target.attr('data-group', groupId);
         placeholder.replaceWith(target);
-        $.event.trigger({ type: 'ideamoved', message: { group: groupId, target: target } });
+        $.event.trigger({ type: 'ideamoved', message: { target: target } });
         placeholder = null;
       }
     }
@@ -396,15 +394,6 @@ var Brainstorm = (function () {
       nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id')) || -1;
       sendIdea(ideaId, { next: nextIdeaId });
     }
-    else if (target.attr('id') === 'new-idea') {
-      $('#new-idea').attr('data-group', e.message.group);
-    }
-    cleanGroups();
-    focusOnInput();
-  }
-
-  function onNewIdeaMoved(e) {
-    
     cleanGroups();
     focusOnInput();
   }
