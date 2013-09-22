@@ -31,18 +31,6 @@ a {
   color: #111;
 }
 
-.ok {
-  background-color: #0e2 !important;
-}
-
-.error {
-  background-color: #f00 !important;
-}
-
-.reconnect {
-  background-color: #fc0 !important;
-}
-
 .placeholder, .message {
   vertical-align: top;
   display: inline-block;
@@ -229,10 +217,21 @@ a {
   padding: 1px 2px;
   background-color: #ddd;
   font-family: Arial, sans-serif;
+  font-weight: bold;
   font-size: 10px;
-  text-transform: none;
-  letter-spacing: normal;
 }
+
+  #status.ok {
+    background-color: rgba(0, 250, 50, 0.8) !important;
+  }
+
+  #status.error {
+    background-color: rgba(255, 40, 40, 0.8) !important;
+  }
+
+  #status.reconnect {
+    background-color: rgba(255, 190, 20, 0.8) !important;
+  }
 
 #uid {
   float: right;

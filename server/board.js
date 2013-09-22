@@ -193,6 +193,7 @@ Board.prototype.setIdea = function (idea) {
   this.groups[idea.group].setIdea(idea);
 }
 Board.prototype.addIdea = function (idea) {
+  this.groups[idea.group] = this.groups[idea.group] || new Group;
   this.groups[idea.group].addIdea(idea);
 }
 Board.prototype.moveIdea = function (idea) {
