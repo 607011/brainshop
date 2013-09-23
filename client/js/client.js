@@ -88,7 +88,7 @@ var Brainstorm = (function () {
   function send(message) {
     if (typeof message.user === 'undefined')
       message.user = user;
-    console.log('send() ->', message);
+    // console.log('send() ->', message);
     socket.send(JSON.stringify(message));
   }
 
@@ -115,7 +115,7 @@ var Brainstorm = (function () {
   }
 
   function updateIdea(data) {
-    console.log('updateIdea()', data);
+    // console.log('updateIdea()', data);
     var box = $('#idea-' + data.id), group = $('#group-' + data.group);
     box.find('#likes-' + data.id).text((data.likes || []).length);
     box.find('#dislikes-' + data.id).text((data.dislikes || []).length);
@@ -215,7 +215,7 @@ var Brainstorm = (function () {
 
     socket.onmessage = function (e) {
       var data = JSON.parse(e.data), i, idea, ok, board, name, header, group;
-      console.log('received -> ', data);
+      // console.log('received -> ', data);
       switch (data.type) {
         case 'idea':
           if ($('#idea-' + data.id).length > 0) {
@@ -325,7 +325,7 @@ var Brainstorm = (function () {
                 if (!connectionEstablished)
                   return;
                 setBoard(name);
-              }));
+              }))
             if (name === boardName)
               board.addClass('active');
             board.prepend(header);

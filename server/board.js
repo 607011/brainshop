@@ -232,22 +232,17 @@ Board.prototype.removeIdea = function (id) {
   }
 }
 Board.prototype.sendToAllUsers = function (message) {
-  console.log('sendToAllUsers() -> message = ', message);
-  var msg = JSON.stringify(message), invalid = {}, i;
-  for (i = 0; i < this.users.length; ++i) {
-    try {
-      this.users[i].send(msg);
-    }
-    catch (ex) {
-      invalid[i] = true;
-    }
-  }
+  var msg = JSON.stringify(message), invalid = {}, u;
+  this.users.each(function (i, user) {
+    try { user.send(msg); }
+    catch (ex) { invalid[i] = true; }
+  });
   // remove invalid connections
-  var u = [];
-  for (i = 0; i < this.users.length; ++i) {
+  u = [];
+  this.users.each(function (i, user) {
     if (!(i in invalid))
       u.push(this.users[i]);
-  }
+  }, this);
   this.users = u;
 }
 

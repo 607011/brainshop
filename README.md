@@ -2,6 +2,7 @@
 
  * Secure WebSocket verwenden (Umstellung auf socket.io erforderlich?)
  * Schöneres Layout für Gruppen und Ideen
+   - http://cs.brown.edu/~rt/gdhandbook/chapters/force-directed.pdf ?
  * das Hin- und Herspringen von Ideen beim Verschieben stört manchmal
  * sanftere Animation beim Verschieben
 

@@ -1,6 +1,8 @@
 // Copyright (c) 2013 Oliver Lau <ola@ct.de>, Heise Zeitschriften Verlag
 // All rights reserved.
 
+var APP_NAME = 'BrainShop Pro';
+
 var fs = require('fs');
 var WebSocketServer = require('ws').Server;
 var mime = require('mime');
@@ -13,16 +15,16 @@ function pad0(x) {
   return ('00' + x.toFixed()).slice(-2);
 }
 
-Array.prototype.each = function (callback) {
+Array.prototype.each = function (callback, scope) {
   var i, N = this.length;
   for (i = 0; i < N; ++i)
-    callback(i, this[i]);
+    callback.apply(scope, [i, this[i]]);
 }
-Object.prototype.each = function (callback) {
-  var i, p, props = Object.getOwnPropertyNames(this);
+Object.prototype.each = function (callback, scope) {
+  var i, p, props = Object.keys(this);
   for (i = 0; i < props.length; ++i) {
     p = props[i];
-    callback(p, this[p]);
+    callback.apply(scope, [p, this[p]]);
   }
 }
 Array.prototype.contains = function (val) {
@@ -42,7 +44,7 @@ function main() {
   var wss, basic;
 
   basic = auth.basic({
-    realm: 'BrainShop Pro',
+    realm: APP_NAME,
     file: __dirname + "/../data/users.htpasswd"
   });
   http.createServer(basic, function httpServer(req, res) {
@@ -67,7 +69,6 @@ function main() {
 
   wss = new WebSocketServer({ port: 8889 });
   wss.on('connection', function (ws) {
-    // console.log(ws.upgradeReq.headers);
     function sendToClient(msg) {
       console.log('sendToClient() -> ', msg);
       ws.send(JSON.stringify(msg));
