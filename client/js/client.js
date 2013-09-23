@@ -171,8 +171,8 @@ var Brainstorm = (function () {
     socket = new WebSocket(URL);
     socket.onopen = function () {
       connectionEstablished = true;
-      $('#main').css('opacity', 1);
-      $('#board').css('opacity', 1);
+      $('#main').removeClass('disconnected');
+      $('#board').removeClass('disconnected');
       $('#input').removeAttr('disabled');
       $('#uid').removeAttr('disabled');
       $('#new-board').removeAttr('disabled');
@@ -185,8 +185,8 @@ var Brainstorm = (function () {
     };
     socket.onerror = function (error) {
       connectionEstablished = false;
-      $('#main').css('opacity', 0.3);
-      $('#board').css('opacity', 0.3);
+      $('#main').addClass('disconnected');
+      $('#board').addClass('disconnected');
       $('#input').attr('disabled', 'disabled');
       $('#uid').attr('disabled', 'disabled');
       $('#new-board').attr('disabled', 'disabled');

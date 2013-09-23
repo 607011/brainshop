@@ -241,6 +241,11 @@ a {
   display: inline-block;
 }
 
+.disconnected {
+  transition: opacity ease 0.5s;
+  opacity: 0.2 !important;
+}
+
 .deleting {
   transition: opacity ease 0.3s;
   opacity: 0;
