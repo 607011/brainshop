@@ -22,7 +22,7 @@ var Brainstorm = (function () {
   var user;
   var boardName, prevBoardName;
   var currentGroup = 0;
-  var lastGroup = 0;
+  var lastGroupAdded = 0;
   var connectionEstablished = false;
 
   jQuery.fn.moveBetweenGroups = function (el) {
@@ -292,6 +292,8 @@ var Brainstorm = (function () {
               newIdeaBox();
             }
             $('#new-idea').appendTo($('#group-' + data.group));
+            if (currentGroup > lastGroupAdded)
+              lastGroupAdded = currentGroup;
             focusOnInput();
           }
           break;
@@ -407,7 +409,7 @@ var Brainstorm = (function () {
   }
 
   function newGroupEvent(e) {
-    var target = e.message.target, group = newGroup(++lastGroup);
+    var target = e.message.target, group = newGroup(++lastGroupAdded);
     if (group.children().length === 0)
       group.append(target);
     cleanGroups();
@@ -426,10 +428,12 @@ var Brainstorm = (function () {
 
   function showLoaderIcon() {
     $('#loader-icon').css('display', 'inline-block').css('visibility', 'visible').css('position', 'absolute').css('left', Math.round(($(window).width() - 25) / 2) + 'px').css('top', Math.round(($(window).height() - 25) / 2) + 'px');
+    $('#app-name').addClass('progressbar');
   }
 
   function hideLoaderIcon() {
     $('#loader-icon').css('display', 'none');
+    $('#app-name').removeClass('progressbar');
   }
 
   return {
