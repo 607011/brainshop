@@ -1,5 +1,6 @@
 # Fehler
 
+ * Löschen einer Gruppe pflanzte  sich nicht auf andere Clients fort
  * Secure WebSocket verwenden (Umstellung auf socket.io erforderlich?)
  * Schöneres Layout für Gruppen und Ideen
    - http://cs.brown.edu/~rt/gdhandbook/chapters/force-directed.pdf ?

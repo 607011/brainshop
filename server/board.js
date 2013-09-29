@@ -76,11 +76,12 @@ var Board = function (name) {
   this.users = [];
   this.lastId = 0;
   this.groups = {};
-  if (typeof name === 'string')
-    this.load();
+  this.load();
 }
 Board.loadAll = function () {
   var board;
+  if (!fs.existsSync('boards'))
+    fs.mkdirSync('boards');
   fs.readdirSync('boards').each(function (i, boardFileName) {
     var m = boardFileName.match(/(.+)\.json$/), name, board;
     if (m && m.length > 1) {
@@ -110,7 +111,7 @@ Board.removeUser = function (user) {
     boards[boardName].users.remove(user);
   });
 };
-Board.informAllUsers = function () {
+Board.broadcastAllBoards = function () {
   var boardNames = Object.keys(boards);
   boardNames.each(function (i, boardName) {
     boards[boardName].users.each(function (i, ws) {
@@ -144,6 +145,8 @@ Board.prototype.getLastId = function () {
   this.lastId = lastId;
 }
 Board.prototype.load = function () {
+  if (typeof this.name !== 'string')
+    return;
   var groups = {};
   var exists = fs.existsSync(this.fileName);
   var all = exists ? JSON.parse(fs.readFileSync(this.fileName, { encoding: 'utf8' })) : {};
@@ -166,6 +169,7 @@ Board.prototype.save = function () {
       data[i] = group.ideas;
       group.ideas.each(function (j, idea) {
         delete idea.group;
+        delete idea.last;
       });
     }
   });

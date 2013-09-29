@@ -88,7 +88,8 @@ var Brainstorm = (function () {
   function send(message) {
     if (typeof message.user === 'undefined')
       message.user = user;
-    // console.log('send() ->', message);
+    console.log('send() ->', message);
+    showLoaderIcon();
     socket.send(JSON.stringify(message));
   }
 
@@ -162,11 +163,16 @@ var Brainstorm = (function () {
     boardChanged();
   }
 
+  function switchToMostRecentBoard() {
+    setBoard(prevBoardName);
+  }
+
   function focusOnInput() {
     $('#input').trigger('focus');
   }
 
   function openSocket() {
+    showLoaderIcon();
     $('#status').removeAttr('class').html('connecting&nbsp;&hellip;');
     socket = new WebSocket(URL);
     socket.onopen = function () {
@@ -220,8 +226,10 @@ var Brainstorm = (function () {
         case 'idea':
           if ($('#idea-' + data.id).length > 0) {
             updateIdea(data);
-            if (data.last)
+            if (data.last) {
               newIdeaBox();
+              hideLoaderIcon();
+            } 
           }
           else {
             data.likes = data.likes || [];
@@ -290,6 +298,7 @@ var Brainstorm = (function () {
                 $('#board').append(group);
               }
               newIdeaBox();
+              hideLoaderIcon();
             }
             $('#new-idea').appendTo($('#group-' + data.group));
             if (currentGroup > lastGroupAdded)
@@ -313,9 +322,6 @@ var Brainstorm = (function () {
                     if (boardName === name) {
                       if (typeof prevBoardName === 'string')
                         setBoard(prevBoardName);
-                      else {
-                        console.log('TODO');
-                      }
                     }
                     send({ type: 'command', command: 'delete-board', name: name });
                   }
@@ -427,7 +433,7 @@ var Brainstorm = (function () {
   }
 
   function showLoaderIcon() {
-    $('#loader-icon').css('display', 'inline-block').css('visibility', 'visible').css('position', 'absolute').css('left', Math.round(($(window).width() - 25) / 2) + 'px').css('top', Math.round(($(window).height() - 25) / 2) + 'px');
+    $('#loader-icon').css('display', 'inline-block').css('position', 'absolute').css('left', Math.floor(($(window).width() - 25) / 2) + 'px').css('top', Math.floor(($(window).height() - 25) / 2) + 'px');
     $('#app-name').addClass('progressbar');
   }
 
@@ -440,13 +446,6 @@ var Brainstorm = (function () {
     init: function () {
       user = localStorage.getItem('user') || '';
       boardName = localStorage.getItem('lastBoardName') || 'Brainstorm';
-      if (user === '') {
-        $('#uid').attr('class', 'pulse');
-        alert('Du bist zum ersten Mal hier. Trage bitte dein Kürzel in das blinkende Feld ein.');
-      }
-      else {
-        showLoaderIcon();
-      }
       openSocket();
       $(window).bind({
         newgroup: newGroupEvent,
@@ -469,6 +468,10 @@ var Brainstorm = (function () {
           }
         }
       });
+      if (user === '') {
+        $('#uid').attr('class', 'pulse');
+        alert('Du bist zum ersten Mal hier. Trage bitte dein Kürzel in das blinkende Feld ein.');
+      }
     }
   };
 

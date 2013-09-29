@@ -109,14 +109,14 @@ function main() {
         case 'command':
           switch (data.command) {
             case 'init':
-              sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
               if (typeof data.board === 'string' && data.board.length > 0) {
                 board = Board.all(data.board);
                 if (typeof board === 'undefined') {
+                  console.log('Board "%s" does not exist.', data.board);
                   board = new Board(data.board);
                   Board.set(data.board, board);
                   board.save();
-                  Board.informAllUsers();
+                  Board.broadcastAllBoards();
                 }
                 board.addUser(ws);
                 lastGroupId = Object.keys(board.groups).slice(-1);
@@ -136,6 +136,7 @@ function main() {
                   }
                 });
               }
+              sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
               break;
             case 'delete':
               board = Board.all(data.board);
@@ -150,6 +151,7 @@ function main() {
                 idea.dislikes.remove(data.user);
               else
                 idea.likes.add(data.user);
+              idea.last = true;
               board.sendToAllUsers(idea);
               board.save();
               break;
@@ -160,12 +162,13 @@ function main() {
                 idea.likes.remove(data.user);
               else
                 idea.dislikes.add(data.user);
+              idea.last = true;
               board.sendToAllUsers(idea);
               board.save();
               break;
             case 'delete-board':
               Board.delete(data.name);
-              sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
+              Board.broadcastAllBoards();
               break;
           }
           break;
