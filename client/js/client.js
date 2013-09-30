@@ -20,7 +20,7 @@ var Brainstorm = (function () {
   var retry_secs;
   var reconnectTimer = null;
   var user;
-  var boardName, prevBoardName;
+  var boardName, prevBoardName, boards = [];
   var currentGroup = 0;
   var lastGroupAdded = 0;
   var connectionEstablished = false;
@@ -68,9 +68,9 @@ var Brainstorm = (function () {
         });
       },
       mouseup: function (e) {
+        var groupId;
         if (!connectionEstablished)
           return;
-        var groupId;
         $(document).unbind('mousemove').unbind('selectstart');
         target.removeAttr('style');
         if (placeholder !== null) {
@@ -228,8 +228,7 @@ var Brainstorm = (function () {
             updateIdea(data);
             if (data.last) {
               newIdeaBox();
-              hideLoaderIcon();
-            } 
+            }
           }
           else {
             data.likes = data.likes || [];
@@ -298,7 +297,6 @@ var Brainstorm = (function () {
                 $('#board').append(group);
               }
               newIdeaBox();
-              hideLoaderIcon();
             }
             $('#new-idea').appendTo($('#group-' + data.group));
             if (currentGroup > lastGroupAdded)
@@ -307,9 +305,19 @@ var Brainstorm = (function () {
           }
           break;
         case 'board-list':
+          Object.keys(boards).forEach(function (id) {
+            var name = boards[id], found = data.boards.some(function (val) { return val === name; });
+            if (!found) {
+              console.log('MUST NOW DELETE BOARD ' + name);
+              // delete boards[id];
+              if (boardName === name)
+                console.log('DELETED BOARD IS ACTIVE!');
+            }
+          });
           $('#available-boards').empty();
-          Object.keys(data.boards).forEach(function (i) {
-            var name = data.boards[i], id = i;
+          boards = data.boards;
+          Object.keys(boards).forEach(function (id) {
+            var name = boards[id];
             header = $('<span class="header"></span>');
             header.append($('<span class="icon trash" title="in den Müll"></span>')
                 .click(function (e) {
@@ -338,7 +346,6 @@ var Brainstorm = (function () {
               board.addClass('active');
             board.prepend(header);
             $('#available-boards').append(board);
-            hideLoaderIcon();
           });
           board = $('<span class="board">'
             + '<span class="header">neues Board</span>'
@@ -373,6 +380,7 @@ var Brainstorm = (function () {
         default:
           break;
       }
+      hideLoaderIcon();
     }
   }
 
