@@ -28,6 +28,7 @@ h1 {
 
 a {
   color: #111;
+  text-decoration: none;
 }
 
 .placeholder, .message {
@@ -245,6 +246,14 @@ a {
     font-size: 13pt;
     font-family: monospace;
 }
+
+a.autolink {
+  cursor: pointer;
+}
+
+  a.autolink:hover {
+    text-decoration: underline;
+  }
 
 #uid {
   float: right;
