@@ -109,6 +109,7 @@ function main() {
         case 'command':
           switch (data.command) {
             case 'init':
+              sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
               if (typeof data.board === 'string' && data.board.length > 0) {
                 board = Board.all(data.board);
                 if (typeof board === 'undefined') {
@@ -136,7 +137,6 @@ function main() {
                   }
                 });
               }
-              sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
               break;
             case 'delete':
               board = Board.all(data.board);

@@ -128,9 +128,12 @@ a {
 
 #main {
   background-color: #5e945f;
-  margin: 1px;
   color: white;
-  position: relative;
+  position: fixed;
+  left: 2px;
+  right: 2px;
+  top: 0;
+  z-index: 10;
 }
 
   #main .header {
@@ -144,6 +147,7 @@ a {
   }
 
 #board {
+  margin-top: 75px;
 }
 
   #board .group {
@@ -155,7 +159,6 @@ a {
     min-height: 68px;
     max-height: 50%;
     min-width: 64px;
-    max-width: 46%;
   }
 
 #new-idea {
@@ -210,10 +213,10 @@ a {
 }
 
 #status {
-  position: absolute;
+  position: fixed;
   right: 0;
   bottom: 0;
-  display: inline-block;
+  display: block;
   color: black;
   padding: 1px 2px;
   background-color: #ddd;

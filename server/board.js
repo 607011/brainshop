@@ -21,7 +21,7 @@ Group.prototype.addIdea = function (idea) {
   if (typeof idea.next === 'number' && idea.next >= 0)
     this.ideas.insertBefore(this.indexOf(idea.next), idea);
   else
-    this.ideas.push(idea);
+    this.ideas.unshift(idea);
 }
 Group.prototype.getIdea = function (id) {
   var i, idea, N = this.ideas.length;

@@ -1,6 +1,10 @@
 # Fehler
 
  * Beim Löschen eines Boards: Falls dieses Board in einem anderen angeschlossenen Client aktiv ist, muss die Ansicht dort auf das davor aktive Board wechseln
+ * Verschieben von Einträgen bei gescrollter Ansicht funktioniert nicht
+
+# Features
+
  * Secure WebSocket verwenden (Umstellung auf socket.io erforderlich?)
  * Schöneres Layout für Gruppen und Ideen
    - http://cs.brown.edu/~rt/gdhandbook/chapters/force-directed.pdf ?

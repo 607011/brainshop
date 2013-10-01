@@ -1,29 +1,23 @@
 // Copyright (c) 2013 Oliver Lau <ola@ct.de>, Heise Zeitschriften Verlag
 // All rights reserved.
 
-"use strict";
-
 Number.prototype.clamp = function (a, b) {
-  return (this < a)? a : ((this > b)? b : this);
-}
+  return (this < a) ? a : ((this > b) ? b : this);
+};
 
 String.prototype.trimmed = function () {
   return this.replace(/^\s+/, '').replace(/\s+$/, '');
-}
+};
 
 var Brainstorm = (function () {
-  var HOST = document.location.hostname;
-  var PORT = 8889;
-  var URL = 'ws://' + HOST + ':' + PORT + '/';
-  var socket;
-  var RETRY_SECS = 5 + 1;
-  var retry_secs;
-  var reconnectTimer = null;
-  var user;
-  var boardName, prevBoardName, boards = [];
-  var currentGroup = 0;
-  var lastGroupAdded = 0;
-  var connectionEstablished = false;
+  'use strict';
+
+  var HOST = document.location.hostname,
+    PORT = 8889, URL = 'ws://' + HOST + ':' + PORT + '/', socket,
+    RETRY_SECS = 5 + 1, retry_secs,
+    reconnectTimer = null,
+    user, boardName, prevBoardName, boards = [],
+    currentGroup = 0, lastGroupAdded = 0, connectionEstablished = false;
 
   jQuery.fn.moveBetweenGroups = function (el) {
     var handle = this, target = $(el), placeholder = null;
@@ -31,11 +25,8 @@ var Brainstorm = (function () {
       mousedown: function (e) {
         if (!connectionEstablished)
           return;
-        var pos = target.offset();
-        var dx = e.pageX - pos.left;
-        var dy = e.pageY - pos.top;
-        var targetW = target.width();
-        var targetH = target.height();
+        var pos = target.offset(), dx = e.pageX - pos.left, dy = e.pageY - pos.top,
+          targetW = target.width(), targetH = target.height();
         target.css('cursor', 'move').css('z-index', 9999);
         $(document).bind({
           selectstart: function () { return false; },
@@ -116,7 +107,6 @@ var Brainstorm = (function () {
   }
 
   function updateIdea(data) {
-    // console.log('updateIdea()', data);
     var box = $('#idea-' + data.id), group = $('#group-' + data.group);
     box.find('#likes-' + data.id).text((data.likes || []).length);
     box.find('#dislikes-' + data.id).text((data.dislikes || []).length);
@@ -153,6 +143,29 @@ var Brainstorm = (function () {
   function boardChanged() {
     clear();
     send({ type: 'command', command: 'init', board: boardName });
+  }
+
+  function storeGroup(group) {
+    var g = localStorage.getItem('lastGroup'), lastGroup = {};
+    if (g != null && g != '')
+      lastGroup = JSON.parse(g);
+    lastGroup[boardName] = group;
+    localStorage.setItem('lastGroup', JSON.stringify(lastGroup));
+    currentGroup = group;
+    console.log('currentGroup = ' + currentGroup);
+  }
+
+  function getGroup() {
+    var g = localStorage.getItem('lastGroup');
+    if (g != null && g != '') {
+      try {
+        g = JSON.parse(g);
+        console.log(g, 'g["' + boardName + '"]', g[boardName]);
+        return g[boardName];
+      }
+      catch (e) { console.error(e); }
+    }
+    return currentGroup;
   }
 
   function setBoard(name) {
@@ -221,14 +234,13 @@ var Brainstorm = (function () {
 
     socket.onmessage = function (e) {
       var data = JSON.parse(e.data), i, idea, ok, board, name, header, group;
-      // console.log('received -> ', data);
-      switch (data.type) {
+      console.log('received -> ', data);
+      switch (data.type) { 
         case 'idea':
           if ($('#idea-' + data.id).length > 0) {
             updateIdea(data);
-            if (data.last) {
+            if (data.last)
               newIdeaBox();
-            }
           }
           else {
             data.likes = data.likes || [];
@@ -290,15 +302,14 @@ var Brainstorm = (function () {
               });
             }
             if (data.last) {
-              currentGroup = data.group;
-              group = $('#group-' + currentGroup);
+              group = $('#group-' + data.group);
               if (group.length === 0) {
                 group = newGroup(currentGroup);
                 $('#board').append(group);
               }
               newIdeaBox();
             }
-            $('#new-idea').appendTo($('#group-' + data.group));
+            $('#new-idea').prependTo($('#group-' + getGroup()));
             if (currentGroup > lastGroupAdded)
               lastGroupAdded = currentGroup;
             focusOnInput();
@@ -393,7 +404,7 @@ var Brainstorm = (function () {
       + '</span>'
       + '</span>').attr('data-group', currentGroup);
     $('<span class="header" style="cursor:pointer"></span>').moveBetweenGroups(idea).prependTo(idea);
-    $('#group-' + currentGroup).append(idea);
+    $('#group-' + getGroup()).prepend(idea);
     $('#input').bind('keyup', function (e) {
       if (!connectionEstablished)
         return;
@@ -435,6 +446,9 @@ var Brainstorm = (function () {
       ideaId = parseInt(target.attr('data-id'));
       nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id')) || -1;
       sendIdea(ideaId, { next: nextIdeaId });
+    }
+    else if (target.attr('id') === 'new-idea') {
+      storeGroup(target.attr('data-group'));
     }
     cleanGroups();
     focusOnInput();
