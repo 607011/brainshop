@@ -152,14 +152,17 @@ a {
 }
 
   #board .group {
-    display: inline-block;
-    float: left;
+    display: block;
     padding: 4px;
-    background-color: #5e945f;
+    background-color: rgb(135, 105, 135);
     margin: 10px 9px 0 1px;
     min-height: 68px;
     max-height: 50%;
     min-width: 64px;
+  }
+
+  #board .group:first-child {
+    background-color: transparent;
   }
 
 #new-idea {
@@ -340,3 +343,13 @@ input[type="text"] {
 @-moz-keyframes move { from { background-position: 0 0; } to { background-position: 24px 0; }}
 @-ms-keyframes move { from { background-position: 0 0; } to { background-position: 24px 0; }}
 @keyframes move { from { background-position: 0 0; } to{ background-position: 24px 0; }}
+
+#clipboard {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  z-index: -1;
+}

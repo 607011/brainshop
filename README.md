@@ -1,11 +1,15 @@
 # Fehler
 
+ * Beim Anlegen eines Boards fehlt das Eingabefeld
  * Beim Löschen eines Boards: Falls dieses Board in einem anderen angeschlossenen Client aktiv ist, muss die Ansicht dort auf das davor aktive Board wechseln
  * Verschieben von Einträgen bei gescrollter Ansicht funktioniert nicht
+ * neue Idee dort in Gruppe einfügen, wo Eingabefeld platziert ist
+ * Eingabefeld darf nicht woanders hinspringen, wenn ein anderer User einen neuen Eintrag hinzugefügt hat
 
 # Features
-
- * Secure WebSocket verwenden (Umstellung auf socket.io erforderlich?)
+ 
+ * Drag'n'Drop von Bildern in eine Ideen-Box; Speicherung inline per Data-URL
+ * Secure WebSocket verwenden, u.a. wegen Fehler bei Firefox: 0x80530012 (SecurityError) (Umstellung auf socket.io erforderlich?)
  * Schöneres Layout für Gruppen und Ideen
    - http://cs.brown.edu/~rt/gdhandbook/chapters/force-directed.pdf ?
  * das Hin- und Herspringen von Ideen beim Verschieben stört manchmal
