@@ -13,7 +13,8 @@ var Brainstorm = (function () {
   'use strict';
 
   var HOST = document.location.hostname,
-    PORT = 8889, URL = 'ws://' + HOST + ':' + PORT + '/', socket,
+    PORT = 8889, URL = 'ws://' + HOST + ':' + PORT + '/',
+    socket,
     RETRY_SECS = 5 + 1, retry_secs,
     reconnectTimer = null,
     user, boardName, prevBoardName, boards = [],
@@ -182,7 +183,13 @@ var Brainstorm = (function () {
   function openSocket() {
     showLoaderIcon();
     $('#status').removeAttr('class').html('connecting&nbsp;&hellip;');
-    socket = new WebSocket(URL);
+    try {
+      socket = new WebSocket(URL);
+    }
+    catch (e) {
+      $('body').empty().append('<p class="fatal">' + e + '</p>');
+      return;
+    }
     socket.onopen = function () {
       connectionEstablished = true;
       $('#main').removeClass('disconnected');
@@ -464,30 +471,32 @@ var Brainstorm = (function () {
       user = localStorage.getItem('user') || '';
       boardName = localStorage.getItem('lastBoardName') || 'Brainstorm';
       openSocket();
-      $(window).bind({
-        newgroup: newGroupEvent,
-        ideamoved: onIdeaMoved
-      });
-      $('#uid').val(user).bind({
-        keypress: function (e) {
-          if (!connectionEstablished)
-            return;
-          if (e.target.value.length > 4)
-            e.preventDefault();
-        },
-        keyup: function (e) {
-          if (!connectionEstablished)
-            return;
-          if (e.target.value !== '') {
-            user = e.target.value.trimmed();
-            localStorage.setItem('user', user);
-            $('#uid').removeClass('pulse');
+      if (typeof socket === 'object') {
+        $(window).bind({
+          newgroup: newGroupEvent,
+          ideamoved: onIdeaMoved
+        });
+        $('#uid').val(user).bind({
+          keypress: function (e) {
+            if (!connectionEstablished)
+              return;
+            if (e.target.value.length > 4)
+              e.preventDefault();
+          },
+          keyup: function (e) {
+            if (!connectionEstablished)
+              return;
+            if (e.target.value !== '') {
+              user = e.target.value.trimmed();
+              localStorage.setItem('user', user);
+              $('#uid').removeClass('pulse');
+            }
           }
+        });
+        if (user === '') {
+          $('#uid').attr('class', 'pulse');
+          alert('Du bist zum ersten Mal hier. Trage bitte dein Kürzel in das blinkende Feld ein.');
         }
-      });
-      if (user === '') {
-        $('#uid').attr('class', 'pulse');
-        alert('Du bist zum ersten Mal hier. Trage bitte dein Kürzel in das blinkende Feld ein.');
       }
     }
   };

@@ -43,12 +43,11 @@ Array.prototype.add = function (val) {
 
 function main() {
   var wss, basic,
-    privateKey = fs.readFileSync('privatekey.pem').toString(),
-    certificate = fs.readFileSync('certificate.pem').toString();
+    privateKey = fs.readFileSync(__dirname + '/privatekey.pem').toString(),
+    certificate = fs.readFileSync(__dirname + '/certificate.pem').toString();
 
   function httpServer(req, res) {
     var pathName = url.parse(req.url).pathname, file;
-    console.log('req.headers = ', req.headers);
     if (pathName === '/')
       pathName = '/index.html';
     file = __dirname + '/../client' + pathName;
@@ -67,7 +66,7 @@ function main() {
 
   basic = auth.basic({
     realm: APP_NAME,
-    file: __dirname + "/../data/users.htpasswd"
+    file: __dirname + '/../data/users.htpasswd'
   });
   
   // http.createServer(basic, httpServer).listen(8887);

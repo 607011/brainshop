@@ -237,6 +237,15 @@ a {
     background-color: rgba(255, 190, 20, 0.8) !important;
   }
 
+.fatal {
+    background-color: rgba(255, 40, 40, 0.8) !important;
+    color: #fff;
+    display: inline-block;
+    padding: 1ex 1em;
+    font-size: 13pt;
+    font-family: monospace;
+}
+
 #uid {
   float: right;
   margin: 1px 5px;
