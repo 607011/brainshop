@@ -7,7 +7,8 @@ var fs = require('fs');
 var WebSocketServer = require('ws').Server;
 var mime = require('mime');
 var url = require('url');
-var http = require('http');
+// var http = require('http');
+var https = require('https');
 var auth = require('http-auth');
 var Board = require('./board').Board;
 
@@ -41,14 +42,13 @@ Array.prototype.add = function (val) {
 };
 
 function main() {
-  var wss, basic;
+  var wss, basic,
+    privateKey = fs.readFileSync('privatekey.pem').toString(),
+    certificate = fs.readFileSync('certificate.pem').toString();
 
-  basic = auth.basic({
-    realm: APP_NAME,
-    file: __dirname + "/../data/users.htpasswd"
-  });
-  http.createServer(basic, function httpServer(req, res) {
+  function httpServer(req, res) {
     var pathName = url.parse(req.url).pathname, file;
+    console.log('req.headers = ', req.headers);
     if (pathName === '/')
       pathName = '/index.html';
     file = __dirname + '/../client' + pathName;
@@ -63,7 +63,15 @@ function main() {
         res.end();
       }
     });
-  }).listen(8888);
+  }
+
+  basic = auth.basic({
+    realm: APP_NAME,
+    file: __dirname + "/../data/users.htpasswd"
+  });
+  
+  // http.createServer(basic, httpServer).listen(8887);
+  https.createServer(basic, { key: privateKey, cert: certificate }, httpServer).listen(8888);
 
   Board.loadAll();
 

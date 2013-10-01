@@ -147,22 +147,17 @@ var Brainstorm = (function () {
 
   function storeGroup(group) {
     var g = localStorage.getItem('lastGroup'), lastGroup = {};
-    if (g != null && g != '')
+    if (g !== null && g !== '')
       lastGroup = JSON.parse(g);
     lastGroup[boardName] = group;
     localStorage.setItem('lastGroup', JSON.stringify(lastGroup));
     currentGroup = group;
-    console.log('currentGroup = ' + currentGroup);
   }
 
   function getGroup() {
     var g = localStorage.getItem('lastGroup');
-    if (g != null && g != '') {
-      try {
-        g = JSON.parse(g);
-        console.log(g, 'g["' + boardName + '"]', g[boardName]);
-        return g[boardName];
-      }
+    if (g !== null && g !== '') {
+      try { return JSON.parse(g)[boardName]; }
       catch (e) { console.error(e); }
     }
     return currentGroup;
