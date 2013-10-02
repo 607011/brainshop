@@ -3,12 +3,13 @@
  * Verschieben einer Idee: Gruppe wird nicht als Ziel erkannt
 
 # Features
- 
+
+ * Kopieren von Ideen innerhalb des Boards
+ * Verschieben/Kopieren von Ideen in ein anderes Board
  * Drag'n'Drop von Bildern in eine Ideen-Box; Speicherung inline per Data-URL
  * Secure WebSocket verwenden, u.a. wegen Fehler bei Firefox: 0x80530012 (SecurityError) (Umstellung auf socket.io erforderlich?)
  * Schöneres Layout für Gruppen und Ideen
    - http://cs.brown.edu/~rt/gdhandbook/chapters/force-directed.pdf ?
- * das Hin- und Herspringen von Ideen beim Verschieben stört manchmal
  * sanftere Animation beim Verschieben
 
 

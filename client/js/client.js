@@ -3,8 +3,6 @@
 
 Number.prototype.clamp = function (a, b) { return (this < a) ? a : ((this > b) ? b : this); };
 String.prototype.trimmed = function () { return this.replace(/^\s+/, '').replace(/\s+$/, ''); };
-Array.prototype.first = function () { return this[0]; };
-Array.prototype.last = function () { return this[this.length - 1]; };
 
 var Brainstorm = (function () {
   'use strict';
@@ -37,20 +35,22 @@ var Brainstorm = (function () {
             display = target.css('display');
             target.css('display', 'none'); // Trick 17
             below = $(document.elementFromPoint(e.clientX, e.clientY));
-            group = below.filter('.group');
+            group = below.closest('.group');
             if (group.length === 0)
               group = below.parents('.group');
             if (placeholder === null)
-              placeholder = $('<span class="placeholder"></span>').css('width', (targetW - 2) + 'px').css('height', (targetH - 2) + 'px');
+              placeholder = $('<span class="placeholder" id="placeholder"></span>').css('width', (targetW - 2) + 'px').css('height', (targetH - 2) + 'px');
             if (group.length === 0) {
               $.event.trigger({ type: 'newgroup', message: { target: placeholder } });
             }
             else {
               closest = below.closest('.message');
-              if (e.clientX < (below.offset().left + below.width() / 2))
-                closest.before(placeholder);
-              else
-                closest.after(placeholder);
+              if (closest.length > 0) {
+                if (e.clientX < (below.offset().left + below.width() / 2))
+                  closest.before(placeholder);
+                else
+                  closest.after(placeholder);
+              }
             }
             target.css('display', display).css('position', 'absolute').css('left', x + 'px').css('top', y + 'px');
           }
@@ -344,7 +344,7 @@ var Brainstorm = (function () {
             switch (d.type) {
               case 'ideas':
                 d.ideas.forEach(processIdea);
-                idea1 = d.ideas.first();
+                idea1 = d.ideas[0];
                 if (typeof idea1 === 'object') {
                   firstGroupAdded = parseInt(idea1.group);
                 }
