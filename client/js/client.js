@@ -14,7 +14,7 @@ var Brainstorm = (function () {
     socket,
     RETRY_SECS = 5 + 1, retry_secs,
     reconnectTimer = null,
-    user, boardName, prevBoardName, boards = [],
+    user, currentBoardName, prevBoardName, boards = [],
     currentGroup = 0, firstGroupAdded = 0, connectionEstablished = false;
 
   jQuery.fn.moveBetweenGroups = function (el) {
@@ -93,12 +93,12 @@ var Brainstorm = (function () {
     if (user === '')
       return;
     if (typeof id === 'undefined') {
-      msg = mix({ board: boardName, type: 'idea', group: $('#new-idea').attr('data-group'), text: $('#input').val().trimmed(), user: user }, optional);
+      msg = mix({ board: currentBoardName, type: 'idea', group: $('#new-idea').attr('data-group'), text: $('#input').val().trimmed(), user: user }, optional);
       send(msg);
       $('#input').val('');
     }
     else {
-      msg = mix({ board: boardName, type: 'idea', id: id, group: $('#idea-' + id).attr('data-group'), text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() }, optional);
+      msg = mix({ board: currentBoardName, type: 'idea', id: id, group: $('#idea-' + id).attr('data-group'), text: $('#idea-text-' + id).html().trimmed(), user: $('#user-' + id).text() }, optional);
       send(msg);
     }
   }
@@ -123,7 +123,7 @@ var Brainstorm = (function () {
             if (ok) {
               if (localStorage.getItem('lastBoardName') === name)
                 localStorage.removeItem('lastBoardName');
-              if (boardName === name) {
+              if (currentBoardName === name) {
                 if (typeof prevBoardName === 'string')
                   setBoard(prevBoardName);
               }
@@ -138,7 +138,7 @@ var Brainstorm = (function () {
             return;
           setBoard(name);
         }))
-      if (name === boardName)
+      if (name === currentBoardName)
         board.addClass('active');
       board.prepend(header);
       $('#available-boards').append(board);
@@ -205,7 +205,7 @@ var Brainstorm = (function () {
             .click(function (e) {
               if (!connectionEstablished)
                 return;
-              send({ type: 'command', command: 'like', board: boardName, id: data.id, group: data.group });
+              send({ type: 'command', command: 'like', board: currentBoardName, id: data.id, group: data.group });
             })
           )
           .append($('<span>' + data.dislikes.length + '</span>').attr('id', 'dislikes-' + data.id))
@@ -213,7 +213,7 @@ var Brainstorm = (function () {
             .click(function (e) {
               if (!connectionEstablished)
                 return;
-              send({ type: 'command', command: 'dislike', board: boardName, id: data.id });
+              send({ type: 'command', command: 'dislike', board: currentBoardName, id: data.id });
             })
           )
           .append($('<span class="icon trash" title="in den Müll"></span>')
@@ -221,7 +221,7 @@ var Brainstorm = (function () {
               if (!connectionEstablished)
                 return;
               if (confirm('Eintrag "' + data.text + '" (#' + data.id + ') wirklich löschen?'))
-                send({ type: 'command', board: boardName, command: 'delete', id: data.id, group: data.group });
+                send({ type: 'command', board: currentBoardName, command: 'delete', id: data.id, group: data.group });
             }
           )
         ));
@@ -266,15 +266,15 @@ var Brainstorm = (function () {
 
   function boardChanged() {
     clear();
-    send({ type: 'command', command: 'init', board: boardName });
+    send({ type: 'command', command: 'init', board: currentBoardName });
   }
 
   function setBoard(name) {
     console.log('setBoard("' + name + '")');
     showProgressInfo();
-    prevBoardName = boardName;
-    boardName = name;
-    localStorage.setItem('lastBoardName', boardName);
+    prevBoardName = currentBoardName;
+    currentBoardName = name;
+    localStorage.setItem('lastBoardName', currentBoardName);
     boardChanged();
   }
 
@@ -396,7 +396,7 @@ var Brainstorm = (function () {
     group = (function getGroup() {
       var g = localStorage.getItem('lastGroup'), gr;
       if (g !== null && g !== '') {
-        try { gr = parseInt(JSON.parse(g)[boardName]); }
+        try { gr = parseInt(JSON.parse(g)[currentBoardName]); }
         catch (e) { console.error(e); }
       }
       if (!isNaN(gr))
@@ -404,7 +404,6 @@ var Brainstorm = (function () {
       storeGroup(firstGroupAdded);
       return firstGroupAdded;
     })();
-    console.log('newIdeaBox(); group = %s; board = %s', group, boardName);
     idea = $('<span class="message" id="new-idea">'
       + '<span class="body">'
       + '<input type="text" id="input" placeholder="meine tolle Idee" />'
@@ -451,18 +450,20 @@ var Brainstorm = (function () {
     var g = localStorage.getItem('lastGroup'), lastGroup = {};
     if (g !== null && g !== '')
       lastGroup = JSON.parse(g);
-    lastGroup[boardName] = group;
+    lastGroup[currentBoardName] = group;
     localStorage.setItem('lastGroup', JSON.stringify(lastGroup));
   }
 
   function deleteBoard(name) {
     var g = localStorage.getItem('lastGroup'), lastGroup = {};
-    console.log('deleteBoard("' + name + '")');
+    console.log('deleteBoard("' + name + '"), currentBoardName = "%s"', currentBoardName);
     if (g !== null && g !== '')
       lastGroup = JSON.parse(g);
     delete lastGroup[name];
     localStorage.setItem('lastGroup', JSON.stringify(lastGroup));
     delete boards[name];
+    if (currentBoardName === name)
+      setBoard(prevBoardName);
   }
 
   function onIdeaMoved(e) {
@@ -490,7 +491,7 @@ var Brainstorm = (function () {
   return {
     init: function () {
       user = localStorage.getItem('user') || '';
-      boardName = localStorage.getItem('lastBoardName') || 'Brainstorm';
+      currentBoardName = localStorage.getItem('lastBoardName') || 'Brainstorm';
       try {
         openSocket();
       }
