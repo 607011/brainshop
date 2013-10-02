@@ -1,11 +1,9 @@
 # Fehler
 
- * Drag'n'Drop: Gruppe wird nicht als Ziel erkannt
  * Beim Anlegen eines Boards fehlt das Eingabefeld
+ * Drag'n'Drop: Gruppe wird nicht als Ziel erkannt
  * Beim Löschen eines Boards: Falls dieses Board in einem anderen angeschlossenen Client aktiv ist, muss die Ansicht dort auf das davor aktive Board wechseln
  * Verschieben von Einträgen bei gescrollter Ansicht funktioniert nicht
- * neue Idee dort in Gruppe einfügen, wo Eingabefeld platziert ist
- * Eingabefeld darf nicht woanders hinspringen, wenn ein anderer User einen neuen Eintrag hinzugefügt hat
 
 # Features
  

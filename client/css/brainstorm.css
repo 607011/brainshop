@@ -255,8 +255,9 @@ a.autolink {
   }
 
 #uid {
-  float: right;
-  margin: 1px 5px;
+  position: absolute;
+  right: 0;
+  top: 0;
   display: inline-block;
 }
 

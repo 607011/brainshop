@@ -84,7 +84,7 @@ function main() {
       Board.removeUser(ws);
     });
     ws.on('message', function (message) {
-      var data = JSON.parse(message || '{}'), idea, ideas, now, i, board, lastGroupId;
+      var data = JSON.parse(message || '{}'), idea, ideas, now, board;
       console.log('message received -> ', data);
       switch (data.type) {
         case 'idea':
@@ -96,7 +96,6 @@ function main() {
             data.likes = [];
             data.dislikes = [];
             board.addIdea(data);
-            data.last = true;
             board.sendToAllUsers(data);
             idea = data;
           }
@@ -106,17 +105,15 @@ function main() {
             idea.text = data.text;
             idea.next = data.next;
             board.moveIdea(idea);
-            idea.last = true;
             board.sendToAllUsers(idea);
           }
           delete idea.next;
-          delete idea.last;
           board.save();
           break;
         case 'command':
           switch (data.command) {
             case 'init':
-              sendToClient({ type: 'board-list', boards: Object.keys(Board.all()) });
+              ideas = [];
               if (typeof data.board === 'string' && data.board.length > 0) {
                 board = Board.all(data.board);
                 if (typeof board === 'undefined') {
@@ -127,23 +124,23 @@ function main() {
                   Board.broadcastAllBoards();
                 }
                 board.addUser(ws);
-                lastGroupId = Object.keys(board.groups).slice(-1);
                 board.groups.each(function (groupId, group) {
                   if (typeof group === 'object') {
                     if (group.ideas.length > 0) {
                       group.ideas.each(function (j, idea) {
-                        idea.last = (j === group.ideas.length - 1) && (groupId == lastGroupId);
                         idea.group = groupId;
-                        sendToClient(idea);
-                        delete idea.last;
+                        ideas.push(idea);
                       });
-                    }
-                    else {
-                      sendToClient({ type: 'idea', last: true, group: groupId });
                     }
                   }
                 });
               }
+              sendToClient({ type: 'init',
+                data: [
+                  { type: 'board-list', boards: Object.keys(Board.all()) },
+                  { type: 'ideas', ideas: ideas }
+                ]
+              });
               break;
             case 'delete':
               board = Board.all(data.board);
