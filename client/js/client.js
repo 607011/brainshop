@@ -501,10 +501,7 @@ var Brainstorm = (function () {
       }
       $(window).bind({
         newgroup: newGroupEvent,
-        ideamoved: onIdeaMoved,
-        mousemove: function (e) {
-          $('#DEBUG').text(e.pageX + '/' + e.pageY + ' ' + e.clientX + '/' + e.clientY);
-        }
+        ideamoved: onIdeaMoved
       });
       $('#uid').val(user).bind({
         keypress: function (e) {

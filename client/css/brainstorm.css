@@ -250,12 +250,12 @@ a {
   }
 
 .fatal {
-    background-color: rgba(255, 40, 40, 0.8) !important;
-    color: #fff;
-    display: inline-block;
-    padding: 1ex 1em;
-    font-size: 13pt;
-    font-family: monospace;
+  background-color: rgba(255, 40, 40, 0.8);
+  color: #fff;
+  display: inline-block;
+  padding: 1ex 1em;
+  font-size: 13pt;
+  font-family: monospace;
 }
 
 a.autolink {

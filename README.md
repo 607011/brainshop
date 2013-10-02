@@ -1,6 +1,6 @@
 # Fehler
 
- * Drag'n'Drop: Gruppe wird nicht als Ziel erkannt
+ * Verschieben einer Idee: Gruppe wird nicht als Ziel erkannt
 
 # Features
  
