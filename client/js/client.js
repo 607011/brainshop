@@ -146,24 +146,6 @@ var Brainstorm = (function () {
     send({ type: 'command', command: 'init', board: boardName });
   }
 
-  function storeGroup(group) {
-    var g = localStorage.getItem('lastGroup'), lastGroup = {};
-    if (g !== null && g !== '')
-      lastGroup = JSON.parse(g);
-    lastGroup[boardName] = group;
-    localStorage.setItem('lastGroup', JSON.stringify(lastGroup));
-    currentGroup = group;
-  }
-
-  function getGroup() {
-    var g = localStorage.getItem('lastGroup');
-    if (g !== null && g !== '') {
-      try { return JSON.parse(g)[boardName]; }
-      catch (e) { console.error(e); }
-    }
-    return currentGroup;
-  }
-
   function setBoard(name) {
     showLoaderIcon();
     prevBoardName = boardName;
@@ -242,7 +224,8 @@ var Brainstorm = (function () {
             data.likes = data.likes || [];
             data.dislikes = data.dislikes || [];
             data.group = data.group || 0;
-            data.text = data.text.replace(/((http|https|ftp)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(:[a-zA-Z0-9]*)?\/?([a-zA-Z0-9\-\._\?\,\'/\\\+&amp;%\$#\=~]))/g, '<a href="$1" title="Strg+Klick öffnet $1 in neuem Fenster/Tab" class="autolink" target="_blank">$1</a>');
+            if (typeof data.text === 'string')
+              data.text = data.text.replace(/((http|https|ftp)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(:[a-zA-Z0-9]*)?\/?([a-zA-Z0-9\-\._\?\,\'/\\\+&amp;%\$#\=~]))/g, '<a href="$1" title="Strg+Klick öffnet $1 in neuem Fenster/Tab" class="autolink" target="_blank">$1</a>');
             group = $('#group-' + data.group);
             if (group.length === 0)
               group = newGroup(data.group);
@@ -306,14 +289,15 @@ var Brainstorm = (function () {
             if (data.last) {
               group = $('#group-' + data.group);
               if (group.length === 0) {
-                group = newGroup(currentGroup);
+                group = newGroup(lastGroupAdded);
                 $('#board').append(group);
               }
               newIdeaBox();
             }
-            $('#new-idea').prependTo($('#group-' + getGroup()));
-            if (currentGroup > lastGroupAdded)
-              lastGroupAdded = currentGroup;
+            if (data.group > lastGroupAdded) {
+              lastGroupAdded = data.group;
+              storeGroup(lastGroupAdded);
+            }
             focusOnInput();
           }
           break;
@@ -400,11 +384,12 @@ var Brainstorm = (function () {
   function newIdeaBox() {
     if ($('#new-idea').length > 0)
       return;
+    console.log('newIdeaBox()');
     var idea = $('<span class="message" id="new-idea">'
       + '<span class="body">'
       + '<input type="text" id="input" placeholder="meine tolle Idee" />'
       + '</span>'
-      + '</span>').attr('data-group', currentGroup);
+      + '</span>').attr('data-group', getGroup());
     $('<span class="header" style="cursor:pointer"></span>').moveBetweenGroups(idea).prependTo(idea);
     $('#group-' + getGroup()).prepend(idea);
     $('#input').bind('keyup', function (e) {
@@ -440,6 +425,28 @@ var Brainstorm = (function () {
     if (group.children().length === 0)
       group.append(target);
     cleanGroups();
+  }
+
+  function storeGroup(group) {
+    var g = localStorage.getItem('lastGroup'), lastGroup = {};
+    if (g !== null && g !== '')
+      lastGroup = JSON.parse(g);
+    lastGroup[boardName] = group;
+    localStorage.setItem('lastGroup', JSON.stringify(lastGroup));
+  }
+
+  function getGroup() {
+    var g = localStorage.getItem('lastGroup');
+    if (g !== null && g !== '') {
+      try {
+        g = JSON.parse(g);
+        console.log(g, g[boardName]);
+        return g[boardName];
+      }
+      catch (e) { console.error(e); }
+    }
+    console.log('getGroup() returning lastGroupAdded (' + lastGroupAdded + ')');
+    return lastGroupAdded;
   }
 
   function onIdeaMoved(e) {
