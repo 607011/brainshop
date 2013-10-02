@@ -21,7 +21,7 @@ var Brainstorm = (function () {
     var handle = this, target = $(el), placeholder = null;
     this.bind({
       mousedown: function (e) {
-        var pos = target.offset(), dx = e.pageX - pos.left, dy = e.pageY - pos.top,
+        var pos = target.offset(), dx = e.clientX - pos.left, dy = e.clientY - pos.top,
           targetW = target.width(), targetH = target.height();
         if (!connectionEstablished)
           return;
@@ -32,11 +32,11 @@ var Brainstorm = (function () {
             var closest, maxX, maxY, x, y, display, below, group;
             maxX = $(window).width() - targetW;
             maxY = $(window).height() - targetH;
-            x = (e.pageX - dx).clamp(0, maxX - 8);
-            y = (e.pageY - dy).clamp(0, maxY - 8);
+            x = (e.clientX - dx).clamp(0, maxX - 8);
+            y = (e.clientY - dy).clamp(0, maxY - 8);
             display = target.css('display');
             target.css('display', 'none'); // Trick 17
-            below = $(document.elementFromPoint(e.pageX, e.pageY));
+            below = $(document.elementFromPoint(e.clientX, e.clientY));
             group = below.filter('.group');
             if (group.length === 0)
               group = below.parents('.group');
@@ -47,7 +47,7 @@ var Brainstorm = (function () {
             }
             else {
               closest = below.closest('.message');
-              if (e.pageX < (below.offset().left + below.width() / 2))
+              if (e.clientX < (below.offset().left + below.width() / 2))
                 closest.before(placeholder);
               else
                 closest.after(placeholder);
@@ -501,7 +501,10 @@ var Brainstorm = (function () {
       }
       $(window).bind({
         newgroup: newGroupEvent,
-        ideamoved: onIdeaMoved
+        ideamoved: onIdeaMoved,
+        mousemove: function (e) {
+          $('#DEBUG').text(e.pageX + '/' + e.pageY + ' ' + e.clientX + '/' + e.clientY);
+        }
       });
       $('#uid').val(user).bind({
         keypress: function (e) {

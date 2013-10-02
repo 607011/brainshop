@@ -1,7 +1,6 @@
 # Fehler
 
  * Drag'n'Drop: Gruppe wird nicht als Ziel erkannt
- * Verschieben von Einträgen bei gescrollter Ansicht funktioniert nicht
 
 # Features
  
