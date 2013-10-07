@@ -1,3 +1,5 @@
+node_modules/*
+Web.config
 *.bak
 *.backup
 *.pem
