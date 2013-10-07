@@ -1,8 +1,10 @@
 // Copyright (c) 2013 Oliver Lau <ola@ct.de>, Heise Zeitschriften Verlag
 // All rights reserved.
 
+//#region utility functions
 Number.prototype.clamp = function (a, b) { return (this < a) ? a : ((this > b) ? b : this); };
 String.prototype.trimmed = function () { return this.replace(/^\s+/, '').replace(/\s+$/, ''); };
+//#endregion
 
 var Brainstorm = (function () {
   'use strict';
@@ -15,6 +17,9 @@ var Brainstorm = (function () {
     user, currentBoardName, prevBoardName, boards = [],
     currentGroup = 0, firstGroupAdded = 0, connectionEstablished = false;
 
+  /** Extension to jQuery element functions containing the code necessary to move idea boxes across the board.
+   * @param {jQuery element} el - The element to be moved.
+  */
   jQuery.fn.moveBetweenGroups = function (el) {
     var handle = this, target = $(el), placeholder = null;
     this.bind({
@@ -27,11 +32,9 @@ var Brainstorm = (function () {
         $(document).bind({
           selectstart: function () { return false; },
           mousemove: function (e) {
-            var closest, maxX, maxY, x, y, display, below, group;
-            maxX = $(window).width() - targetW;
-            maxY = $(window).height() - targetH;
-            x = (e.clientX - dx).clamp(0, maxX - 8);
-            y = (e.clientY - dy).clamp(0, maxY - 8);
+            var x, y, display, closest, below, group;
+            x = (e.clientX - dx).clamp(0, $(window).width() - targetW - 8);
+            y = (e.clientY - dy).clamp(0, $(window).height() - targetH - 8);
             display = target.css('display');
             target.css('display', 'none'); // Trick 17
             below = $(document.elementFromPoint(e.clientX, e.clientY));
@@ -72,13 +75,17 @@ var Brainstorm = (function () {
       }
     });
     return this;
-  }
+  };
 
+  /** Merge the attributes of two objects returning the merged object.
+   * @param {object} a - first object
+   * @param {object} b - second object
+   */
   var mix = function (a, b) {
     if (typeof a === 'object' && typeof b === 'object')
       Object.keys(b).forEach(function (i) { a[i] = b[i]; });
     return a;
-  }
+  };
 
   function send(message) {
     if (typeof message.user === 'undefined')
@@ -137,7 +144,7 @@ var Brainstorm = (function () {
           if (!connectionEstablished)
             return;
           setBoard(name);
-        }))
+        }));
       if (name === currentBoardName)
         board.addClass('active');
       board.prepend(header);
@@ -155,9 +162,9 @@ var Brainstorm = (function () {
         e.preventDefault();
         return;
       }
-      if (e.keyCode === 13 && e.target.value != '')
+      if (e.keyCode === 13 && e.target.value !== '')
         setBoard(e.target.value);
-    })
+    });
   }
 
   function processIdea(data) {
@@ -194,7 +201,7 @@ var Brainstorm = (function () {
       data.dislikes = data.dislikes || [];
       data.group = data.group || 0;
       if (typeof data.text === 'string')
-        data.text = data.text.replace(/((http|https|ftp)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(:[a-zA-Z0-9]*)?\/?([\w\-\.\?\,\'/\\\+&amp;%\$#\=~]))/g, '<a href="$1" title="Strg+Klick öffnet $1 in neuem Fenster/Tab" class="autolink" target="_blank">$1</a>');
+        data.text = data.text.replace(/((http|https|ftp)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(:[a-zA-Z0-9]*)?\/?([\w\-\.\?\,\'\/\\\+&amp;%\$#\=~]))/g, '<a href="$1" title="Strg+Klick öffnet $1 in neuem Fenster/Tab" class="autolink" target="_blank">$1</a>');
       group = $('#group-' + data.group);
       if (group.length === 0)
         group = newGroupElement(data.group);
@@ -346,7 +353,7 @@ var Brainstorm = (function () {
                 d.ideas.forEach(processIdea);
                 idea1 = d.ideas[0];
                 if (typeof idea1 === 'object') {
-                  firstGroupAdded = parseInt(idea1.group);
+                  firstGroupAdded = parseInt(idea1.group, 10);
                 }
                 else {
                   firstGroupAdded = 0;
@@ -369,24 +376,21 @@ var Brainstorm = (function () {
           processBoardList(data);
           break;
         case 'command':
-          switch (data.command) {
-            case 'delete':
-              $('#board').find('#idea-' + data.id).addClass('deleting');
-              setTimeout(function () {
-                $('#board').find('#idea-' + data.id).remove();
-                cleanGroups();
-              }, 300);
-              focusOnInput();
-              break;
-            default:
-              break;
+          if (data.command === 'delete') {
+            $('#board').find('#idea-' + data.id).addClass('deleting');
+            setTimeout(function () {
+              $('#board').find('#idea-' + data.id).remove();
+              cleanGroups();
+            }, 300);
+            focusOnInput();
+            break;
           }
           break;
         default:
           break;
       }
       hideProgressInfo();
-    }
+    };
   }
 
   function newIdeaBox() {
@@ -396,7 +400,7 @@ var Brainstorm = (function () {
     group = (function getGroup() {
       var g = localStorage.getItem('lastGroup'), gr;
       if (g !== null && g !== '') {
-        try { gr = parseInt(JSON.parse(g)[currentBoardName]); }
+        try { gr = parseInt(JSON.parse(g)[currentBoardName], 10); }
         catch (e) { console.error(e); }
       }
       if (!isNaN(gr))
@@ -466,11 +470,14 @@ var Brainstorm = (function () {
       setBoard(prevBoardName);
   }
 
+  /** This function will be called with a special Event object whenever an idea is moved across the board.
+   * @param {Event} e - Event object containing the jQuery'd DOM element containing the idea
+  */
   function onIdeaMoved(e) {
     var target = e.message.target, ideaId, nextIdeaId;
     if (target.attr('id').match(/^idea-/)) {
-      ideaId = parseInt(target.attr('data-id'));
-      nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id')) || -1;
+      ideaId = parseInt(target.attr('data-id'), 10);
+      nextIdeaId = parseInt($('#idea-' + ideaId).next().attr('data-id'), 10) || -1;
       sendIdea(ideaId, { next: nextIdeaId });
     }
     else if (target.attr('id') === 'new-idea') {
@@ -480,12 +487,14 @@ var Brainstorm = (function () {
     focusOnInput();
   }
 
+  /** Show the barber pole on top of page. */
   function showProgressInfo() {
-    $('#app-name').addClass('progressbar');
+    $('#header').addClass('barberpole');
   }
 
+  /** Hide the barber pole on top of page. */
   function hideProgressInfo() {
-    $('#app-name').removeClass('progressbar');
+    $('#header').removeClass('barberpole');
   }
 
   return {

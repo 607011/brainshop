@@ -7,39 +7,10 @@ var fs = require('fs');
 var WebSocketServer = require('ws').Server;
 var mime = require('mime');
 var url = require('url');
-// var http = require('http');
 var https = require('https');
 var auth = require('http-auth');
+var pad0 = require('./utility').pad0;
 var Board = require('./board').Board;
-
-function pad0(x) {
-  return ('00' + x.toFixed()).slice(-2);
-}
-
-Array.prototype.each = function (callback, scope) {
-  var i, N = this.length;
-  for (i = 0; i < N; ++i)
-    callback.apply(scope, [i, this[i]]);
-}
-Object.prototype.each = function (callback, scope) {
-  var i, p, props = Object.keys(this);
-  for (i = 0; i < props.length; ++i) {
-    p = props[i];
-    callback.apply(scope, [p, this[p]]);
-  }
-}
-Array.prototype.contains = function (val) {
-  return this.indexOf(val) >= 0;
-}
-Array.prototype.remove = function (val) {
-  var idx = this.indexOf(val);
-  if (idx >= 0)
-    this.splice(idx, 1);
-};
-Array.prototype.add = function (val) {
-  if (!this.contains(val))
-    this.push(val);
-};
 
 function main() {
   var wss, basic,

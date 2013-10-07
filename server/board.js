@@ -1,16 +1,13 @@
 // Copyright (c) 2013 Oliver Lau <ola@ct.de>, Heise Zeitschriften Verlag
 // All rights reserved.
 
+require('./utility');
+
 var fs = require('fs');
 
 var DefaultBoardName = 'Brainstorm';
 
 var boards = {};
-
-
-Array.prototype.insertBefore = function (idx, item) {
-  this.splice(idx, 0, item);
-}
 
 var Group = function (ideas) {
   this.ideas = ideas || [];

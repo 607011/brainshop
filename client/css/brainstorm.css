@@ -59,32 +59,32 @@ a {
     max-height: 14px;
     overflow: hidden;
     text-align: right;
-    user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    user-select: none;
     height: 15px;
   }
 
-  .message .header .handle {
-    display: block;
-    height: 12px;
-    cursor: pointer;
-  }
+    .message .header .handle {
+      display: block;
+      height: 12px;
+      cursor: pointer;
+    }
 
-  .message .header .menu {
-    float: right;
-  }
+    .message .header .menu {
+      float: right;
+    }
 
   .message .body {
     display: block;
     padding: 2px 17px 1px 5px;
   }
 
-  .message .body .idea {
-    display: block;
-    font-size: 15pt;
-  }
+    .message .body .idea {
+      display: block;
+      font-size: 15pt;
+    }
 
   .message .footer {
     display: block;
@@ -92,19 +92,19 @@ a {
     bottom: 0;
   }
 
-  .message .footer .user {
-    padding-left: 0.7em;
-    display: inline-block;
-    font-weight: bold;
-    font-family: Arial, sans-serif;
-    font-size: 10px;
-  }
+    .message .footer .user {
+      padding-left: 0.7em;
+      display: inline-block;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+    }
 
-  .message .footer .date {
-    display: inline-block;
-    font-family: Arial, sans-serif;
-    font-size: 10px;
-  }
+    .message .footer .date {
+      display: inline-block;
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+    }
 
 .icon {
   display: inline-block;
@@ -133,7 +133,7 @@ a {
   position: fixed;
   left: 2px;
   right: 2px;
-  top: 0;
+  top: 17px;
   z-index: 10;
 }
 
@@ -175,6 +175,8 @@ a {
   font-size: 21pt;
   max-width: 17%;
   white-space: nowrap;
+  -ms-text-overflow: ellipsis;
+  -o-text-overflow: ellipsis;
   text-overflow: ellipsis;
   margin: 1px;
   cursor: pointer;
@@ -188,10 +190,10 @@ a {
     max-height: 14px;
     overflow: hidden;
     text-align: right;
-    user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    user-select: none;
     height: 15px;
   }
 
@@ -204,10 +206,10 @@ a {
     font-size: 24pt;
   }
 
-  #main .board input[type="text"]#new-board {
-    font-size: 13pt;
-    font-weight: bold;
-  }
+    #main .board input[type="text"]#new-board {
+      font-size: 13pt;
+      font-weight: bold;
+    }
 
 #available-boards {
 }
@@ -274,31 +276,59 @@ a.autolink {
 }
 
 .disconnected {
+  -webkit-transition: opacity ease 0.5s;
+  -moz-transition: opacity ease 0.5s;
+  -o-transition: opacity ease 0.5s;
   transition: opacity ease 0.5s;
   opacity: 0.2 !important;
 }
 
 .deleting {
+  -webkit-transition: opacity ease 0.3s;
+  -moz-transition: opacity ease 0.3s;
+  -o-transition: opacity ease 0.3s;
   transition: opacity ease 0.3s;
   opacity: 0;
 }
 
 .showing {
+  -webkit-transition: opacity ease-out 0.3s;
+  -moz-transition: opacity ease-out 0.3s;
+  -o-transition: opacity ease-out 0.3s;
   transition: opacity ease-out 0.3s;
   opacity: 1;
 }
 
 .blink-once {
-  animation: blink 0.3s ease;
+  -o-animation: blink 0.3s ease;
   -webkit-animation: blink 0.3s ease;
   -moz-animation: blink 0.3s ease;
-  -ms-animation: blink 0.3s easee;
+  animation: blink 0.3s ease;
 }
 
-@keyframes blink {50% { background-color: rgba(255, 255, 255, 1.0); }}
-@-webkit-keyframes blink {50% { background-color: rgba(255, 255, 255, 1.0); }}
-@-moz-keyframes blink {50% { background-color: rgba(255, 255, 255, 1.0); }}
-@-ms-keyframes blink {50% { background-color: rgba(255, 255, 255, 1.0); }}
+@keyframes blink {
+  50% {
+    background-color: rgba(255, 255, 255, 1.0);
+  }
+}
+
+@-webkit-keyframes blink {
+  50% {
+    background-color: rgba(255, 255, 255, 1.0);
+  }
+}
+
+@-moz-keyframes blink {
+  50% {
+    background-color: rgba(255, 255, 255, 1.0);
+  }
+}
+
+@-ms-keyframes blink {
+  50% {
+    background-color: rgba(255, 255, 255, 1.0);
+  }
+}
 
 input[type="text"] {
   font-family: Arial, sans-serif;
@@ -319,39 +349,111 @@ input[type="text"] {
   }
 
 .pulse {
-  animation: pulse 0.2s alternate ease-in-out infinite;
   -webkit-animation: pulse 0.2s alternate ease-in-out infinite;
   -moz-animation: pulse 0.2s alternate ease-in-out infinite;
-  -ms-animation: pulse 0.2s alternate ease-in-out infinite;
+  -o-animation: pulse 0.2s alternate ease-in-out infinite;
+  animation: pulse 0.2s alternate ease-in-out infinite;
 }
 
-@keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}
-@-webkit-keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}
-@-moz-keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}
-@-ms-keyframes pulse { from { background-color: #fff; } to { background-color: #f00; }}
+@keyframes pulse {
+  from {
+    background-color: #fff;
+  }
 
-.progressbar {
-    background-color: transparent;
-    background-image: -webkit-linear-gradient(-45deg, rgba(255, 154, 26, 1) 25%, transparent 25%, transparent 50%, rgba(255, 154, 26, 1) 50%, rgba(255, 154, 26, 1) 75%, transparent 75%, transparent);
-    background-image: -moz-linear-gradient(-45deg, rgba(255, 154, 26, 1) 25%, transparent 25%, transparent 50%, rgba(255, 154, 26, 1) 50%, rgba(255, 154, 26, 1) 75%, transparent 75%, transparent);
-    background-image: linear-gradient(-45deg, rgba(255, 154, 26, 1) 25%, transparent 25%, transparent 50%, rgba(255, 154, 26, 1) 50%, rgba(255, 154, 26, 1) 75%, transparent 75%, transparent);
-    -webkit-background-size: 24px 24px;
-    -moz-background-size: 24px 24px;
-    background-size: 24px 24px;
-    -webkit-box-shadow: inset 0 6px 0 rgba(255, 255, 255, .2);
-    -moz-box-shadow: inset 0 6px 0 rgba(255, 255, 255, .2);
-    -ms-box-shadow: inset 0 6px 0 rgba(255, 255, 255, .2);
-    box-shadow: inset 0 6px 0 rgba(255, 255, 255, .2);
-    -webkit-animation: move 0.5s linear infinite;
-    -moz-animation: move 0.5s linear infinite;
-    -ms-animation: move 0.5s linear infinite;
-    animation: move 0.5s linear infinite;
+  to {
+    background-color: #f00;
+  }
+}
+
+@-webkit-keyframes pulse {
+  from {
+    background-color: #fff;
+  }
+
+  to {
+    background-color: #f00;
+  }
+}
+
+@-moz-keyframes pulse {
+  from {
+    background-color: #fff;
+  }
+
+  to {
+    background-color: #f00;
+  }
+}
+
+@-ms-keyframes pulse {
+  from {
+    background-color: #fff;
+  }
+
+  to {
+    background-color: #f00;
+  }
+}
+
+.barberpole {
+  background-color: transparent;
+  background-image: -webkit-linear-gradient(-45deg, rgba(255, 154, 26, 1) 25%, transparent 25%, transparent 50%, rgba(255, 154, 26, 1) 50%, rgba(255, 154, 26, 1) 75%, transparent 75%, transparent);
+  background-image: -moz-linear-gradient(-45deg, rgba(255, 154, 26, 1) 25%, transparent 25%, transparent 50%, rgba(255, 154, 26, 1) 50%, rgba(255, 154, 26, 1) 75%, transparent 75%, transparent);
+  background-image: linear-gradient(-45deg, rgba(255, 154, 26, 1) 25%, transparent 25%, transparent 50%, rgba(255, 154, 26, 1) 50%, rgba(255, 154, 26, 1) 75%, transparent 75%, transparent);
+  -webkit-background-size: 24px 24px;
+  -moz-background-size: 24px 24px;
+  -o-background-size: 24px 24px;
+  background-size: 24px 24px;
+  -webkit-box-shadow: inset 0 6px 0 rgba(255, 255, 255, .2);
+  -moz-box-shadow: inset 0 6px 0 rgba(255, 255, 255, .2);
+  -ms-box-shadow: inset 0 6px 0 rgba(255, 255, 255, .2);
+  box-shadow: inset 0 6px 0 rgba(255, 255, 255, .2);
+  -webkit-animation: move 0.5s linear infinite;
+  -moz-animation: move 0.5s linear infinite;
+  -o-animation: move 0.5s linear infinite;
+  animation: move 0.5s linear infinite;
+  background-position: 0 0;
+}
+
+@-webkit-keyframes move {
+  from {
     background-position: 0 0;
+  }
+
+  to {
+    background-position: 24px 0;
+  }
 }
-@-webkit-keyframes move { from { background-position: 0 0; } to { background-position: 24px 0; }}
-@-moz-keyframes move { from { background-position: 0 0; } to { background-position: 24px 0; }}
-@-ms-keyframes move { from { background-position: 0 0; } to { background-position: 24px 0; }}
-@keyframes move { from { background-position: 0 0; } to{ background-position: 24px 0; }}
+
+@-moz-keyframes move {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 24px 0;
+  }
+}
+
+@-ms-keyframes move {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 24px 0;
+  }
+}
+
+@keyframes move {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 24px 0;
+  }
+}
 
 #clipboard {
   position: fixed;
