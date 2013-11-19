@@ -316,7 +316,7 @@ var Brainstorm = (function () {
       $('#main').addClass('disconnected');
       $('#board').addClass('disconnected');
       $('#input').attr('disabled', 'disabled');
-      $('#uid').attr('disabled', 'disabled');
+      // $('#uid').attr('disabled', 'disabled');
       $('#new-board').attr('disabled', 'disabled');
       $('#status').removeAttr('class').text('connection failed').addClass('error');
       retry_secs = RETRY_SECS;
