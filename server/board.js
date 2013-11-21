@@ -113,7 +113,7 @@ Board.broadcastAllBoards = function () {
   boardNames.each(function (i, boardName) {
     boards[boardName].users.each(function (i, ws) {
       try {
-        ws.send(JSON.stringify({ type: 'board-list', boards: boardNames }));
+        ws.sendText(JSON.stringify({ type: 'board-list', boards: boardNames }));
       }
       catch (e) { console.error(e); }
     });
@@ -235,7 +235,7 @@ Board.prototype.removeIdea = function (id) {
 Board.prototype.sendToAllUsers = function (message) {
   var msg = JSON.stringify(message), invalid = {}, u;
   this.users.each(function (i, user) {
-    try { user.send(msg); }
+    try { user.sendText(msg); }
     catch (ex) { invalid[i] = true; }
   });
   // remove invalid connections

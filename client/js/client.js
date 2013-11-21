@@ -10,7 +10,7 @@ var Brainstorm = (function () {
   'use strict';
 
   var HOST = document.location.hostname,
-    PORT = 8889, URL = 'ws://' + HOST + ':' + PORT + '/',
+    PORT = 8889, URL = 'wss://' + HOST + ':' + PORT + '/',
     socket,
     RETRY_SECS = 5 + 1, retry_secs,
     reconnectTimer = null,

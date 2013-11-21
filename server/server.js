@@ -4,7 +4,7 @@
 var APP_NAME = 'BrainShop Pro';
 
 var fs = require('fs');
-var WebSocketServer = require('ws').Server;
+var ws = require("nodejs-websocket");
 var mime = require('mime');
 var url = require('url');
 var https = require('https');
@@ -45,16 +45,19 @@ function main() {
 
   Board.loadAll();
 
-  wss = new WebSocketServer({ port: 8889 });
-  wss.on('connection', function (ws) {
+  wss = ws.createServer({
+      secure: true,
+      key: fs.readFileSync(__dirname + '/privatekey.pem'),
+      cert: fs.readFileSync(__dirname + '/certificate.pem')
+  }, function(ws) {
     function sendToClient(msg) {
       console.log('sendToClient() -> ', msg);
-      ws.send(JSON.stringify(msg));
+      ws.sendText(JSON.stringify(msg));
     }
     ws.on('close', function (message) {
       Board.removeUser(ws);
     });
-    ws.on('message', function (message) {
+    ws.on('text', function (message) {
       var data = JSON.parse(message || '{}'), idea, ideas, now, board;
       console.log('message received -> ', data);
       switch (data.type) {
@@ -149,7 +152,7 @@ function main() {
           break;
       }
     });
-  });
+  }).listen(8889);
 }
 
 
