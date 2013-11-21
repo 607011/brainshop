@@ -13,17 +13,20 @@ var pad0 = require('./utility').pad0;
 var Board = require('./board').Board;
 
 function main() {
-  var wss, 
-    privateKey = fs.readFileSync(__dirname + '/privatekey.pem').toString(),
+  var privateKey = fs.readFileSync(__dirname + '/privatekey.pem').toString(),
     certificate = fs.readFileSync(__dirname + '/certificate.pem').toString(),
     basicAuth = auth.basic({
       realm: APP_NAME,
       file: __dirname + '/../data/users.htpasswd'
     }),
-    wssOptions = {
-      secure: true,
+    httpsOptions = {
       key: privateKey,
       cert: certificate
+    },
+    wssOptions = {
+      key: privateKey,
+      cert: certificate,
+      secure: true
     };
 
   function httpServer(req, res) {
@@ -44,13 +47,8 @@ function main() {
     });
   }
 
-  https.createServer(basicAuth, { key: privateKey, cert: certificate }, httpServer).listen(8888);
-
-  Board.loadAll();
-  
-  wss = ws.createServer(wssOptions, function(ws) {
+  function wsServer(ws) {
     function sendToClient(msg) {
-      console.log('sendToClient() -> ', msg);
       ws.sendText(JSON.stringify(msg));
     }
     ws.on('close', function (message) {
@@ -58,7 +56,6 @@ function main() {
     });
     ws.on('text', function (message) {
       var data = JSON.parse(message || '{}'), idea, ideas, now, board;
-      console.log('message received -> ', data);
       switch (data.type) {
         case 'idea':
           now = new Date;
@@ -151,8 +148,13 @@ function main() {
           break;
       }
     });
-  }).listen(8889);
-}
+  }
 
+
+  Board.loadAll();
+
+  https.createServer(basicAuth, httpsOptions, httpServer).listen(8888);
+  ws.createServer(wssOptions, wsServer).listen(8889);
+}
 
 main();
