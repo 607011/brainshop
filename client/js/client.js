@@ -111,7 +111,7 @@ var Brainstorm = (function () {
   }
 
   function processBoardList(data) {
-    var board, header, group;
+    var board;
     Object.keys(boards).forEach(function (id) {
       var name = boards[id], found = data.boards.some(function (val) { return val === name; });
       if (!found)
@@ -120,9 +120,10 @@ var Brainstorm = (function () {
     $('#available-boards').empty();
     boards = data.boards;
     Object.keys(boards).forEach(function (id) {
-      var name = boards[id];
-      header = $('<span class="header"></span>');
-      header.append($('<span class="icon trash" title="in den Müll"></span>')
+      var name, board, header;
+      name = boards[id];
+      header = $('<span class="header"></span>')
+        .append($('<span class="icon trash" title="in den Müll"></span>')
           .click(function (e) {
             if (!connectionEstablished)
               return;

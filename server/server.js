@@ -4,7 +4,7 @@
 var APP_NAME = 'BrainShop Pro';
 
 var fs = require('fs');
-var ws = require("nodejs-websocket");
+var ws = require('nodejs-websocket');
 var mime = require('mime');
 var url = require('url');
 var https = require('https');
@@ -13,9 +13,18 @@ var pad0 = require('./utility').pad0;
 var Board = require('./board').Board;
 
 function main() {
-  var wss, basic,
+  var wss, 
     privateKey = fs.readFileSync(__dirname + '/privatekey.pem').toString(),
-    certificate = fs.readFileSync(__dirname + '/certificate.pem').toString();
+    certificate = fs.readFileSync(__dirname + '/certificate.pem').toString(),
+    basicAuth = auth.basic({
+      realm: APP_NAME,
+      file: __dirname + '/../data/users.htpasswd'
+    }),
+    wssOptions = {
+      secure: true,
+      key: privateKey,
+      cert: certificate
+    };
 
   function httpServer(req, res) {
     var pathName = url.parse(req.url).pathname, file;
@@ -35,21 +44,11 @@ function main() {
     });
   }
 
-  basic = auth.basic({
-    realm: APP_NAME,
-    file: __dirname + '/../data/users.htpasswd'
-  });
-  
-  // http.createServer(basic, httpServer).listen(8887);
-  https.createServer(basic, { key: privateKey, cert: certificate }, httpServer).listen(8888);
+  https.createServer(basicAuth, { key: privateKey, cert: certificate }, httpServer).listen(8888);
 
   Board.loadAll();
-
-  wss = ws.createServer({
-      secure: true,
-      key: fs.readFileSync(__dirname + '/privatekey.pem'),
-      cert: fs.readFileSync(__dirname + '/certificate.pem')
-  }, function(ws) {
+  
+  wss = ws.createServer(wssOptions, function(ws) {
     function sendToClient(msg) {
       console.log('sendToClient() -> ', msg);
       ws.sendText(JSON.stringify(msg));
