@@ -10,7 +10,7 @@ var Brainstorm = (function () {
   'use strict';
 
   var HOST = document.location.hostname,
-    PORT = 8889, URL = 'wss://' + HOST + ':' + PORT + '/',
+    PORT = 8889, URL = 'ws://' + HOST + ':' + PORT + '/',
     socket,
     RETRY_SECS = 5 + 1, retry_secs,
     reconnectTimer = null,
@@ -317,7 +317,6 @@ var Brainstorm = (function () {
       $('#main').addClass('disconnected');
       $('#board').addClass('disconnected');
       $('#input').attr('disabled', 'disabled');
-      // $('#uid').attr('disabled', 'disabled');
       $('#new-board').attr('disabled', 'disabled');
       $('#status').removeAttr('class').text('connection failed').addClass('error');
       retry_secs = RETRY_SECS;
@@ -344,7 +343,7 @@ var Brainstorm = (function () {
 
     socket.onmessage = function (e) {
       var data = JSON.parse(e.data), idea1, group;
-      console.log('received -> ', data);
+      console.log('received -> ', e);
       switch (data.type) {
         case 'init':
           data = data.data;

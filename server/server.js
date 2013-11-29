@@ -24,9 +24,9 @@ function main() {
       cert: certificate
     },
     wssOptions = {
-      key: privateKey,
-      cert: certificate,
-      secure: true
+      //key: privateKey,
+      //cert: certificate,
+      //secure: true
     };
 
   function httpServer(req, res) {
@@ -53,6 +53,9 @@ function main() {
     }
     ws.on('close', function (message) {
       Board.removeUser(ws);
+    });
+    ws.on('error', function (e) {
+      console.log(e);
     });
     ws.on('text', function (message) {
       var data = JSON.parse(message || '{}'), idea, ideas, now, board;
