@@ -10,7 +10,7 @@ var Brainstorm = (function () {
   'use strict';
 
   var HOST = document.location.hostname,
-    PORT = 8889, URL = 'ws://' + HOST + ':' + PORT + '/',
+    PORT = 8889, URL = 'wss://' + HOST + ':' + PORT + '/',
     socket,
     RETRY_SECS = 5 + 1, retry_secs,
     reconnectTimer = null,
@@ -112,6 +112,7 @@ var Brainstorm = (function () {
 
   function processBoardList(data) {
     var board;
+    // delete locally stored boards that no longer exist
     Object.keys(boards).forEach(function (id) {
       var name = boards[id], found = data.boards.some(function (val) { return val === name; });
       if (!found)
@@ -202,7 +203,8 @@ var Brainstorm = (function () {
       data.dislikes = data.dislikes || [];
       data.group = data.group || 0;
       if (typeof data.text === 'string')
-        data.text = data.text.replace(/((http|https|ftp)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(:[a-zA-Z0-9]*)?\/?([\w\-\.\?\,\'\/\\\+&amp;%\$#\=~]))/g, '<a href="$1" title="Strg+Klick öffnet $1 in neuem Fenster/Tab" class="autolink" target="_blank">$1</a>');
+        data.text = data.text.replace(/((http|https|ftp)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(:[a-zA-Z0-9]*)?\/?([\w\-\.\?\,\'\/\\\+&amp;%\$#\=~]))/g,
+          '<a href="$1" title="Strg+Klick öffnet $1 in neuem Fenster/Tab" class="autolink" target="_blank">$1</a>');
       group = $('#group-' + data.group);
       if (group.length === 0)
         group = newGroupElement(data.group);

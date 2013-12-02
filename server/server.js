@@ -24,9 +24,9 @@ function main() {
       cert: certificate
     },
     wssOptions = {
-      //key: privateKey,
-      //cert: certificate,
-      //secure: true
+      key: privateKey,
+      cert: certificate,
+      secure: true
     };
 
   function httpServer(req, res) {
