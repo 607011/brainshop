@@ -152,10 +152,10 @@ var Brainstorm = (function () {
       board.prepend(header);
       $('#available-boards').append(board);
     });
-    board = $('<span class="board">'
-      + '<span class="header">neues Board</span>'
-      + '<span class="body"><input type="text" id="new-board" placeholder="..." size="7" /></span>'
-      + '</span>');
+    board = $('<span class="board">' +
+      '<span class="header">neues Board</span>' +
+      '<span class="body"><input type="text" id="new-board" placeholder="..." size="7" /></span>' +
+      '</span>');
     $('#available-boards').append(board);
     $('#new-board').bind('keyup', function (e) {
       if (!connectionEstablished)
@@ -171,7 +171,8 @@ var Brainstorm = (function () {
 
   function processIdea(data) {
     var group, header, idea, box;
-    if ($('#idea-' + data.id).length > 0) { // update idea
+    console.log('currentBoardName = ' + currentBoardName + ' ===? ' + data.board);
+    if (data.board === currentBoardName && ('#idea-' + data.id).length > 0) { // update idea
       box = $('#idea-' + data.id);
       box.find('#likes-' + data.id).text((data.likes || []).length);
       box.find('#dislikes-' + data.id).text((data.dislikes || []).length);
@@ -235,13 +236,13 @@ var Brainstorm = (function () {
             }
           )
         ));
-        idea = $('<span class="message" id="idea-' + data.id + '">'
-          + '<span class="body"><span class="idea" id="idea-text-' + data.id + '">' + data.text + '</span></span>'
-          + '<span class="footer">'
-          + '<span class="date">' + data.date + '</span>'
-          + '<span class="user" id="user-' + data.id + '">' + data.user + '</span>'
-          + '</span>'
-          + '</span>');
+        idea = $('<span class="message" id="idea-' + data.id + '">' +
+          '<span class="body"><span class="idea" id="idea-text-' + data.id + '">' + data.text + '</span></span>' +
+          '<span class="footer">' +
+          '<span class="date">' + data.date + '</span>' +
+          '<span class="user" id="user-' + data.id + '">' + data.user + '</span>' +
+          '</span>' +
+          '</span>');
         idea.prepend(header).attr('data-group', data.group).attr('data-id', data.id);
         if (typeof data.next === 'number' && data.next >= 0)
           $('#idea-' + data.next).before(idea);
@@ -345,7 +346,7 @@ var Brainstorm = (function () {
 
     socket.onmessage = function (e) {
       var data = JSON.parse(e.data), idea1, group;
-      console.log('received -> ', e);
+      console.log('received -> ', data);
       switch (data.type) {
         case 'init':
           data = data.data;
@@ -410,11 +411,11 @@ var Brainstorm = (function () {
       storeGroup(firstGroupAdded);
       return firstGroupAdded;
     })();
-    idea = $('<span class="message" id="new-idea">'
-      + '<span class="body">'
-      + '<input type="text" id="input" placeholder="meine tolle Idee" />'
-      + '</span>'
-      + '</span>').attr('data-group', group);
+    idea = $('<span class="message" id="new-idea">' +
+      '<span class="body">' +
+      '<input type="text" id="input" placeholder="meine tolle Idee" />' +
+      '</span>' +
+      '</span>').attr('data-group', group);
     $('<span class="header" style="cursor:pointer"></span>').moveBetweenGroups(idea).prependTo(idea);
     $('#group-' + group).prepend(idea);
     $('#input').bind('keyup', function (e) {

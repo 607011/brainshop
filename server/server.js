@@ -61,7 +61,7 @@ function main() {
       var data = JSON.parse(message || '{}'), idea, ideas, now, board;
       switch (data.type) {
         case 'idea':
-          now = new Date;
+          now = new Date();
           data.date = now.getFullYear() + '-' + pad0(now.getMonth() + 1) + '-' + pad0(now.getDate()) + ' ' + pad0(now.getHours()) + ':' + pad0(now.getMinutes());
           board = Board.all()[data.board];
           if (typeof data.id === 'undefined') { // new entry
